@@ -6,9 +6,7 @@ import { Test } from "forge-std/Test.sol";
 import { CallRecorder, Reverter } from "test/mocks/Callers.sol";
 import { Transactor } from "src/periphery/Transactor.sol";
 
-/// @title Transactor_TestInit
-/// @notice Reusable test initialization for `Transactor` tests.
-contract Transactor_TestInit is Test {
+contract Transactor_Initializer is Test {
     address alice = address(128);
     address bob = address(256);
 
@@ -34,22 +32,16 @@ contract Transactor_TestInit is Test {
     }
 }
 
-/// @title Transactor_Constructor_Test
-/// @notice Tests the constructor of the `Transactor` contract.
-contract Transactor_Constructor_Test is Transactor_TestInit {
+contract TransactorTest is Transactor_Initializer {
     /// @notice Tests if the owner was set correctly during deploy
     function test_constructor_succeeds() external view {
         assertEq(address(alice), transactor.owner());
     }
-}
 
-/// @title Transactor_Call_Test
-/// @notice Tests the `CALL` function of the `Transactor` contract.
-contract Transactor_Call_Test is Transactor_TestInit {
     /// @notice Tests CALL, should do a call to target
     function test_call_succeeds() external {
         // Initialize call data
-        bytes memory data = abi.encodeCall(CallRecorder.record, ());
+        bytes memory data = abi.encodeWithSelector(callRecorded.record.selector);
         // Run CALL
         vm.prank(alice);
         vm.expectCall(address(callRecorded), 200_000 wei, data);
@@ -59,21 +51,17 @@ contract Transactor_Call_Test is Transactor_TestInit {
     /// @notice It should revert if called by non-owner
     function test_call_unauthorized_reverts() external {
         // Initialize call data
-        bytes memory data = abi.encodeCall(CallRecorder.record, ());
+        bytes memory data = abi.encodeWithSelector(callRecorded.record.selector);
         // Run CALL
         vm.prank(bob);
         vm.expectRevert("UNAUTHORIZED");
         transactor.CALL(address(callRecorded), data, 200_000 wei);
     }
-}
 
-/// @title Transactor_DelegateCall_Test
-/// @notice Tests the `DELEGATECALL` function of the `Transactor` contract.
-contract Transactor_DelegateCall_Test is Transactor_TestInit {
     /// @notice Deletate call succeeds.
     function test_delegateCall_succeeds() external {
         // Initialize call data
-        bytes memory data = abi.encodeCall(Reverter.doRevert, ());
+        bytes memory data = abi.encodeWithSelector(reverter.doRevert.selector);
         // Run CALL
         vm.prank(alice);
         vm.expectCall(address(reverter), data);
@@ -83,7 +71,7 @@ contract Transactor_DelegateCall_Test is Transactor_TestInit {
     /// @notice It should revert if called by non-owner
     function test_delegateCall_unauthorized_reverts() external {
         // Initialize call data
-        bytes memory data = abi.encodeCall(Reverter.doRevert, ());
+        bytes memory data = abi.encodeWithSelector(reverter.doRevert.selector);
         // Run CALL
         vm.prank(bob);
         vm.expectRevert("UNAUTHORIZED");

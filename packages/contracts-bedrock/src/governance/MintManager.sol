@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-// Contracts
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-
-// Interfaces
-import { IGovernanceToken } from "interfaces/governance/IGovernanceToken.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./GovernanceToken.sol";
 
 /// @title MintManager
 /// @notice Set as `owner` of the governance token and responsible for the token inflation
@@ -14,7 +11,7 @@ import { IGovernanceToken } from "interfaces/governance/IGovernanceToken.sol";
 ///         token supply. Upgradable to allow changes in the inflation schedule.
 contract MintManager is Ownable {
     /// @notice The GovernanceToken that the MintManager can mint tokens
-    IGovernanceToken public immutable governanceToken;
+    GovernanceToken public immutable governanceToken;
 
     /// @notice The amount of tokens that can be minted per year.
     ///         The value is a fixed point number with 4 decimals.
@@ -35,7 +32,7 @@ contract MintManager is Ownable {
     /// @param _governanceToken The governance token this contract can mint tokens of.
     constructor(address _upgrader, address _governanceToken) {
         transferOwnership(_upgrader);
-        governanceToken = IGovernanceToken(_governanceToken);
+        governanceToken = GovernanceToken(_governanceToken);
     }
 
     /// @notice Only the token owner is allowed to mint a certain amount of the

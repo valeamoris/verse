@@ -59,7 +59,7 @@
     "name": "governanceToken",
     "outputs": [
       {
-        "internalType": "contract IGovernanceToken",
+        "internalType": "contract GovernanceToken",
         "name": "",
         "type": "address"
       }

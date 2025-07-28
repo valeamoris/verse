@@ -8,11 +8,9 @@ import { CommonTest } from "test/setup/CommonTest.sol";
 import { Types } from "src/libraries/Types.sol";
 import { Hashing } from "src/libraries/Hashing.sol";
 
-/// @title L2ToL1MessagePasser_InitiateWithdrawal_Test
-/// @notice Tests the `initiateWithdrawal` function of the `L2ToL1MessagePasser` contract.
-contract L2ToL1MessagePasser_InitiateWithdrawal_Test is CommonTest {
-    /// @notice Tests that `initiateWithdrawal` succeeds and correctly sets the state of the
-    ///         message passer for the withdrawal hash.
+contract L2ToL1MessagePasserTest is CommonTest {
+    /// @dev Tests that `initiateWithdrawal` succeeds and correctly sets the state
+    ///      of the message passer for the withdrawal hash.
     function testFuzz_initiateWithdrawal_succeeds(
         address _sender,
         address _target,
@@ -49,8 +47,8 @@ contract L2ToL1MessagePasser_InitiateWithdrawal_Test is CommonTest {
         assertEq(vm.load(address(l2ToL1MessagePasser), slot), bytes32(uint256(1)));
     }
 
-    /// @notice Tests that `initiateWithdrawal` succeeds and emits the correct MessagePassed log
-    ///         when called by a contract.
+    /// @dev Tests that `initiateWithdrawal` succeeds and emits the correct MessagePassed
+    ///      log when called by a contract.
     function testFuzz_initiateWithdrawal_fromContract_succeeds(
         address _target,
         uint256 _gasLimit,
@@ -79,8 +77,8 @@ contract L2ToL1MessagePasser_InitiateWithdrawal_Test is CommonTest {
         l2ToL1MessagePasser.initiateWithdrawal{ value: _value }(_target, _gasLimit, _data);
     }
 
-    /// @notice Tests that `initiateWithdrawal` succeeds and emits the correct MessagePassed log
-    ///         when called by an EOA.
+    /// @dev Tests that `initiateWithdrawal` succeeds and emits the correct MessagePassed
+    ///      log when called by an EOA.
     function testFuzz_initiateWithdrawal_fromEOA_succeeds(
         uint256 _gasLimit,
         address _target,
@@ -107,12 +105,8 @@ contract L2ToL1MessagePasser_InitiateWithdrawal_Test is CommonTest {
         // the nonce increments
         assertEq(nonce + 1, l2ToL1MessagePasser.messageNonce());
     }
-}
 
-/// @title L2ToL1MessagePasser_Burn_Test
-/// @notice Tests the `burn` function of the `L2ToL1MessagePasser` contract.
-contract L2ToL1MessagePasser_Burn_Test is CommonTest {
-    /// @notice Tests that `burn` succeeds and destroys the ETH held in the contract.
+    /// @dev Tests that `burn` succeeds and destroys the ETH held in the contract.
     function testFuzz_burn_succeeds(uint256 _value, address _target, uint256 _gasLimit, bytes memory _data) external {
         vm.deal(address(this), _value);
 

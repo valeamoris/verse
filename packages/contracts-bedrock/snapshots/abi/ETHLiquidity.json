@@ -7,13 +7,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "fund",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -64,25 +57,6 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "funder",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "LiquidityFunded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
         "name": "caller",
         "type": "address"
       },
@@ -98,7 +72,7 @@
   },
   {
     "inputs": [],
-    "name": "InvalidAmount",
+    "name": "NotCustomGasToken",
     "type": "error"
   },
   {

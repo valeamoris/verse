@@ -22,12 +22,12 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "owner",
+        "name": "",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "spender",
+        "name": "",
         "type": "address"
       }
     ],
@@ -70,7 +70,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "src",
+        "name": "",
         "type": "address"
       }
     ],
@@ -153,33 +153,12 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_guy",
+        "name": "_owner",
         "type": "address"
-      }
-    ],
-    "name": "hold",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "initVersion",
-    "outputs": [
+      },
       {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "contract ISystemConfig",
-        "name": "_systemConfig",
+        "internalType": "contract ISuperchainConfig",
+        "name": "_config",
         "type": "address"
       }
     ],
@@ -203,20 +182,7 @@
   },
   {
     "inputs": [],
-    "name": "proxyAdmin",
-    "outputs": [
-      {
-        "internalType": "contract IProxyAdmin",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "proxyAdminOwner",
+    "name": "owner",
     "outputs": [
       {
         "internalType": "address",
@@ -242,25 +208,19 @@
   },
   {
     "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "symbol",
     "outputs": [
       {
         "internalType": "string",
         "name": "",
         "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "systemConfig",
-    "outputs": [
-      {
-        "internalType": "contract ISystemConfig",
-        "name": "",
-        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -329,6 +289,19 @@
         "type": "bool"
       }
     ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -486,6 +459,25 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "src",
         "type": "address"
       },
@@ -521,42 +513,26 @@
         "type": "uint256"
       }
     ],
-    "name": "Withdrawal",
+    "name": "Unwrap",
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "ProxyAdminOwnedBase_NotProxyAdmin",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ProxyAdminOwnedBase_NotProxyAdminOrProxyAdminOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ProxyAdminOwnedBase_NotProxyAdminOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ProxyAdminOwnedBase_NotResolvedDelegateProxy",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ProxyAdminOwnedBase_NotSharedProxyAdminOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ProxyAdminOwnedBase_ProxyAdminNotFound",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ReinitializableBase_ZeroInitVersion",
-    "type": "error"
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "src",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "wad",
+        "type": "uint256"
+      }
+    ],
+    "name": "Withdrawal",
+    "type": "event"
   }
 ]

@@ -168,6 +168,7 @@ func main() {
 
 		return nil
 	})
+
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)

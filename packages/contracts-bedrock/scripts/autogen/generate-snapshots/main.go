@@ -66,6 +66,7 @@ func main() {
 }
 
 func generateSnapshots(rootDir string) error {
+
 	forgeArtifactsDir := filepath.Join(rootDir, "forge-artifacts")
 	srcDir := filepath.Join(rootDir, "src")
 	outDir := filepath.Join(rootDir, "snapshots")

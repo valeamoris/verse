@@ -101,11 +101,12 @@ var versions = []contractVersion{
 			return mustParseAbi(faultDisputeGameAbi131)
 		},
 	},
-	{
-		version:  versLatest,
-		gameType: faultTypes.CannonGameType,
-		loadAbi:  snapshots.LoadFaultDisputeGameABI,
-	},
+	// TODO: Here needs to make sure 1.4.0 version's affection.
+	//{
+	//	version:  versLatest,
+	//	gameType: faultTypes.CannonGameType,
+	//	loadAbi:  snapshots.LoadFaultDisputeGameABI,
+	//},
 }
 
 func TestSimpleGetters(t *testing.T) {

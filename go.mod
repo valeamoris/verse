@@ -303,7 +303,7 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-replace github.com/ethereum/go-ethereum v1.15.11 => github.com/HashKeyChain/hk-geth v0.0.0-20250721173906-3884f2589492
+replace github.com/ethereum/go-ethereum v1.15.11 => github.com/HashKeyChain/verse-geth v0.0.0-20250725030436-f1874b05fcb0
 
 //replace github.com/ethereum/go-ethereum => ../op-geth
 

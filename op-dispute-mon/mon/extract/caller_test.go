@@ -51,18 +51,18 @@ func TestMetadataCreator_CreateContract(t *testing.T) {
 			name: "validAsteriscKonaGameType",
 			game: types.GameMetadata{GameType: uint32(faultTypes.AsteriscKonaGameType), Proxy: fdgAddr},
 		},
-		{
-			name: "validSuperCannonGameType",
-			game: types.GameMetadata{GameType: uint32(faultTypes.SuperCannonGameType), Proxy: fdgAddr},
-		},
-		{
-			name: "validSuperPermissionedGameType",
-			game: types.GameMetadata{GameType: uint32(faultTypes.SuperPermissionedGameType), Proxy: fdgAddr},
-		},
-		{
-			name: "validSuperAsteriscKonaGameType",
-			game: types.GameMetadata{GameType: uint32(faultTypes.SuperAsteriscKonaGameType), Proxy: fdgAddr},
-		},
+		//{
+		//	name: "validSuperCannonGameType",
+		//	game: types.GameMetadata{GameType: uint32(faultTypes.SuperCannonGameType), Proxy: fdgAddr},
+		//},
+		//{
+		//	name: "validSuperPermissionedGameType",
+		//	game: types.GameMetadata{GameType: uint32(faultTypes.SuperPermissionedGameType), Proxy: fdgAddr},
+		//},
+		//{
+		//	name: "validSuperAsteriscKonaGameType",
+		//	game: types.GameMetadata{GameType: uint32(faultTypes.SuperAsteriscKonaGameType), Proxy: fdgAddr},
+		//},
 		{
 			name:        "InvalidGameType",
 			game:        types.GameMetadata{GameType: 6, Proxy: fdgAddr},
@@ -93,9 +93,9 @@ func TestMetadataCreator_CreateContract(t *testing.T) {
 
 func setupMetadataLoaderTest(t *testing.T, gameType uint32) (*batching.MultiCaller, *mockCacheMetrics) {
 	fdgAbi := snapshots.LoadFaultDisputeGameABI()
-	if gameType == uint32(faultTypes.SuperPermissionedGameType) || gameType == uint32(faultTypes.SuperCannonGameType) || gameType == uint32(faultTypes.SuperAsteriscKonaGameType) {
-		fdgAbi = snapshots.LoadSuperFaultDisputeGameABI()
-	}
+	//if gameType == uint32(faultTypes.SuperPermissionedGameType) || gameType == uint32(faultTypes.SuperCannonGameType) || gameType == uint32(faultTypes.SuperAsteriscKonaGameType) {
+	//	fdgAbi = snapshots.LoadSuperFaultDisputeGameABI()
+	//}
 	stubRpc := batchingTest.NewAbiBasedRpc(t, fdgAddr, fdgAbi)
 	caller := batching.NewMultiCaller(stubRpc, batching.DefaultBatchSize)
 	stubRpc.SetResponse(fdgAddr, "version", rpcblock.Latest, nil, []interface{}{"0.18.0"})

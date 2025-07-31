@@ -75,6 +75,19 @@ type outputRootProof struct {
 }
 
 func NewFaultDisputeGameContract(ctx context.Context, metrics metrics.ContractMetricer, addr common.Address, caller *batching.MultiCaller) (FaultDisputeGameContract, error) {
+	gameType, err := DetectGameType(ctx, addr, caller)
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect game type: %w", err)
+	}
+	switch gameType {
+	case types.SuperCannonGameType, types.SuperPermissionedGameType, types.SuperAsteriscKonaGameType:
+		return NewSuperFaultDisputeGameContract(ctx, metrics, addr, caller)
+	default:
+		return NewPreInteropFaultDisputeGameContract(ctx, metrics, addr, caller)
+	}
+}
+
+func NewPreInteropFaultDisputeGameContract(ctx context.Context, metrics metrics.ContractMetricer, addr common.Address, caller *batching.MultiCaller) (FaultDisputeGameContract, error) {
 	contractAbi := snapshots.LoadFaultDisputeGameABI()
 
 	var builder VersionedBuilder[FaultDisputeGameContract]

@@ -7,7 +7,7 @@ dep-status:
 install:
   forge install
 
-build: prebuild
+build: # prebuild
   forge build
 
 build-go-ffi:

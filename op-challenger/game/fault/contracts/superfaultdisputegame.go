@@ -23,7 +23,7 @@ type SuperFaultDisputeGameContractLatest struct {
 }
 
 func NewSuperFaultDisputeGameContract(ctx context.Context, metrics metrics.ContractMetricer, addr common.Address, caller *batching.MultiCaller) (FaultDisputeGameContract, error) {
-	panic("unimplement")
+	panic("unimplemented")
 	/*contractAbi := snapshots.LoadSuperFaultDisputeGameABI()
 	return &SuperFaultDisputeGameContractLatest{
 		FaultDisputeGameContractLatest: FaultDisputeGameContractLatest{

@@ -305,9 +305,7 @@ require (
 
 replace github.com/ethereum/go-ethereum v1.15.11 => github.com/HashKeyChain/verse-geth v0.0.0-20250725030436-f1874b05fcb0
 
-//replace github.com/ethereum/go-ethereum => ../op-geth
-
-// replace github.com/ethereum-optimism/superchain-registry/superchain => ../superchain-registry/superchain
+replace github.com/boltdb/bolt v1.3.1 => github.com/mask-pp/bolt v0.0.0-20250715093345-102771178f37
 
 // This release keeps breaking Go builds. Stop that.
 exclude (

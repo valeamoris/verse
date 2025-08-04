@@ -18,7 +18,7 @@ ARG KONA_VERSION=none
 
 # The version of asterisc to use.
 # The only build that uses this is `op-challenger-target`.
-ARG ASTERISC_VERSION=latest
+ARG ASTERISC_VERSION=none
 
 # We may be cross-building for another platform. Specify which platform we need as builder.
 FROM --platform=$BUILDPLATFORM golang:1.24.5-alpine3.22 AS builder

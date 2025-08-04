@@ -185,9 +185,9 @@ CMD ["op-node"]
 
 # TODO: unused
 # Make the kona docker image published by upstream available as a source to copy kona from.
-#FROM ghcr.io/op-rs/kona/kona-host:$KONA_VERSION AS kona
+# FROM ghcr.io/op-rs/kona/kona-host:$KONA_VERSION AS kona
 # Make the asterisc docker image published by upstream available as a source to copy asterisc from.
-#FROM rothcold/asterisc:$ASTERISC_VERSION AS asterisc
+# FROM us-docker.pkg.dev/oplabs-tools-artifacts/images/asterisc:$ASTERISC_VERSION AS asterisc
 
 # Also produce an op-challenger loaded with kona and asterisc using ubuntu
 FROM $UBUNTU_TARGET_BASE_IMAGE AS op-challenger-target
@@ -201,10 +201,10 @@ ENV OP_CHALLENGER_CANNON_BIN=/usr/local/bin/cannon
 
 # TODO: unused
 # Copy in kona and asterisc
-#COPY --from=kona /usr/local/bin/kona-host /usr/local/bin/
-#ENV OP_CHALLENGER_ASTERISC_KONA_SERVER=/usr/local/bin/kona-host
-#COPY --from=asterisc /usr/local/bin/asterisc /usr/local/bin/
-#ENV OP_CHALLENGER_ASTERISC_BIN=/usr/local/bin/asterisc
+# COPY --from=kona /usr/local/bin/kona-host /usr/local/bin/
+# ENV OP_CHALLENGER_ASTERISC_KONA_SERVER=/usr/local/bin/kona-host
+# COPY --from=asterisc /usr/local/bin/asterisc /usr/local/bin/
+# ENV OP_CHALLENGER_ASTERISC_BIN=/usr/local/bin/asterisc
 CMD ["op-challenger"]
 
 FROM $TARGET_BASE_IMAGE AS op-dispute-mon-target

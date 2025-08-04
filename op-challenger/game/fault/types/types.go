@@ -30,14 +30,14 @@ const (
 	CannonGameType            GameType = 0
 	PermissionedGameType      GameType = 1
 	AsteriscGameType          GameType = 2
-	AsteriscKonaGameType      GameType = 3
-	SuperCannonGameType       GameType = 4
-	SuperPermissionedGameType GameType = 5
-	OPSuccinctGameType        GameType = 6
-	SuperAsteriscKonaGameType GameType = 7
+	AsteriscKonaGameType      GameType = 3 // TODO: unused
+	SuperCannonGameType       GameType = 4 // TODO: unused
+	SuperPermissionedGameType GameType = 5 // TODO: unused
+	OPSuccinctGameType        GameType = 6 // TODO: unused
+	SuperAsteriscKonaGameType GameType = 7 // TODO: unused
 	FastGameType              GameType = 254
 	AlphabetGameType          GameType = 255
-	KailuaGameType            GameType = 1337
+	KailuaGameType            GameType = 1337 // TODO: unused
 	UnknownGameType           GameType = math.MaxUint32
 )
 

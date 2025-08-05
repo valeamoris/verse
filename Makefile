@@ -38,7 +38,7 @@ golang-docker: ## Builds Docker images for Go components using buildx
 	IMAGE_TAGS=$$(git rev-parse --abbrev-ref HEAD | sed 's#[^a-zA-Z0-9_.-]#-#g'),latest \
 	docker buildx bake \
 			--progress plain \
-			--push \
+			--load \
 			--debug \
 			-f docker-bake.hcl \
 			op-node op-batcher op-proposer op-challenger op-dispute-mon cannon op-program

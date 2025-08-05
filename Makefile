@@ -35,7 +35,7 @@ golang-docker: ## Builds Docker images for Go components using buildx
 	PLATFORMS="linux/amd64,linux/arm64,linux/riscv64" \
 	GIT_COMMIT=$$(git rev-parse HEAD) \
 	GIT_DATE=$$(git show -s --format='%ct') \
-	IMAGE_TAGS=$$(git rev-parse --abbrev-ref HEAD),latest \
+	IMAGE_TAGS=$$(git rev-parse --abbrev-ref HEAD | sed 's#[^a-zA-Z0-9_.-]#-#g'),latest \
 	docker buildx bake \
 			--progress plain \
 			--push \

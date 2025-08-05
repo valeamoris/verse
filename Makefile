@@ -32,12 +32,14 @@ lint-go-fix: ## Lints Go code with specific linters and fixes reported issues
 
 golang-docker: ## Builds Docker images for Go components using buildx
 	# We don't use a buildx builder here, and just load directly into regular docker, for convenience.
+	PLATFORMS="linux/amd64,linux/arm64,linux/riscv64" \
 	GIT_COMMIT=$$(git rev-parse HEAD) \
 	GIT_DATE=$$(git show -s --format='%ct') \
 	IMAGE_TAGS=$$(git rev-parse --abbrev-ref HEAD),latest \
 	docker buildx bake \
 			--progress plain \
-			--load \
+			--push \
+			--debug \
 			-f docker-bake.hcl \
 			op-node op-batcher op-proposer op-challenger op-dispute-mon cannon op-program
 .PHONY: golang-docker

@@ -2,14 +2,6 @@ variable "REPOSITORY" {
   default = "rothcold"
 }
 
-variable "KONA_VERSION" {
-  default = "1.0.1"
-}
-
-variable "ASTERISC_VERSION" {
-  default = "v1.3.0"
-}
-
 variable "GIT_COMMIT" {
   default = "dev"
 }
@@ -140,8 +132,6 @@ target "op-challenger" {
     GIT_COMMIT = "${GIT_COMMIT}"
     GIT_DATE = "${GIT_DATE}"
     OP_CHALLENGER_VERSION = "${OP_CHALLENGER_VERSION}"
-//     KONA_VERSION="${KONA_VERSION}"
-//     ASTERISC_VERSION="${ASTERISC_VERSION}"
   }
   target = "op-challenger-target"
   platforms = split(",", PLATFORMS)

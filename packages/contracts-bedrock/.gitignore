@@ -34,6 +34,10 @@ deployments/kontrol.json
 deployments/kontrol.jsonReversed
 deployments/kontrol-fp.json
 deployments/kontrol-fp.jsonReversed
+deployments/artifact.json
+deployments/genesis.json
+deployments/rollup.json
+deployments/state-dump-latest.json
 
 # Devnet config which changes with each 'make devnet-up'
 deploy-config/devnetL1.json

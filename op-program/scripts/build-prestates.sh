@@ -12,11 +12,11 @@ cd "${TMP_DIR}"
 
 # Need to check out a fresh copy of the monorepo so we can switch to specific tags without it also affecting the
 # contents of this script (which is checked into the repo).
-git clone https://github.com/ethereum-optimism/optimism --recurse-submodules
+git clone https://github.com/HashKeyChain/verse --recurse-submodules
 
 STATES_DIR="${SCRIPTS_DIR}/../temp/states"
 LOGS_DIR="${SCRIPTS_DIR}/../temp/logs"
-REPO_DIR="${TMP_DIR}/optimism"
+REPO_DIR="${TMP_DIR}/verse"
 BIN_DIR="${REPO_DIR}/op-program/bin/"
 VERSIONS_FILE="${STATES_DIR}/versions.json"
 
@@ -26,7 +26,7 @@ mkdir -p "${STATES_DIR}" "${LOGS_DIR}"
 cd "${REPO_DIR}"
 
 VERSIONS_JSON="[]"
-VERSIONS=$(git tag --list 'op-program/v*' --sort taggerdate)
+VERSIONS=$(git tag --list 'v*' --sort taggerdate)
 
 for VERSION in ${VERSIONS}
 do

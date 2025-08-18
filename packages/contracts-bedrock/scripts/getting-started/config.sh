@@ -64,7 +64,7 @@ cat << EOL > tmp_config.json
   "batchInboxAddress": "0xff00000000000000000000000000000000042069",
   "batchSenderAddress": "$GS_BATCHER_ADDRESS",
 
-  "l2OutputOracleSubmissionInterval": 120,
+  "l2OutputOracleSubmissionInterval": 6,
   "l2OutputOracleStartingBlockNumber": 0,
   "l2OutputOracleStartingTimestamp": $timestamp,
 
@@ -101,6 +101,8 @@ cat << EOL > tmp_config.json
   "eip1559Denominator": 50,
   "eip1559DenominatorCanyon": 250,
   "eip1559Elasticity": 6,
+
+  "faultGameGenesisOutputRoot": "$blockhash",
 EOL
 
 # Append conditional environment variables with their corresponding default values
@@ -137,7 +139,6 @@ cat << EOL >> tmp_config.json
   "faultGameClockExtension": 0,
   "faultGameMaxClockDuration": 1200,
   "faultGameGenesisBlock": 0,
-  "faultGameGenesisOutputRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
   "faultGameSplitDepth": 14,
   "faultGameWithdrawalDelay": 600,
 

@@ -326,7 +326,7 @@ contract Deploy is Deployer {
     function _run() internal virtual {
         _run(true);
 
-        // Save the static predeployed l2 addresses.
+        // Save the static predeployed L2 addresses.
         _appendDeployment("L2StandardBridge", getAddress("L2StandardBridge"));
         _appendDeployment("L2StandardBridgeInterop", getAddress("L2StandardBridgeInterop"));
         _appendDeployment("L2CrossDomainMessenger", getAddress("L2CrossDomainMessenger"));

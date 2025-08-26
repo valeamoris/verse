@@ -325,6 +325,8 @@ contract Deploy is Deployer {
     /// @notice Compatibility function for tests that override _run().
     function _run() internal virtual {
         _run(true);
+
+        save("L2StandardBridge", address(getAddress("L2StandardBridge")));
     }
 
     /// @notice Internal function containing the deploy logic.

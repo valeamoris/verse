@@ -44,3 +44,6 @@ deploy-config/devnetL1.json
 
 # Getting Started guide deploy config
 deploy-config/getting-started.json
+
+# Ignore foundry lock file.
+foundry.lock

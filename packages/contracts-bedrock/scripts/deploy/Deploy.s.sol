@@ -327,11 +327,11 @@ contract Deploy is Deployer {
         _run(true);
 
         // Save the static predeployed l2 addresses.
-        _appendDeployment("L2StandardBridge", address(getAddress("L2StandardBridge")));
-        _appendDeployment("L2StandardBridgeInterop", address(getAddress("L2StandardBridgeInterop")));
-        _appendDeployment("L2CrossDomainMessenger", address(getAddress("L2CrossDomainMessenger")));
-        _appendDeployment("L2ToL1MessagePasser", address(getAddress("L2ToL1MessagePasser")));
-        _appendDeployment("LegacyERC20ETH", address(getAddress("LegacyERC20ETH")));
+        _appendDeployment("L2StandardBridge", getAddress("L2StandardBridge"));
+        _appendDeployment("L2StandardBridgeInterop", getAddress("L2StandardBridgeInterop"));
+        _appendDeployment("L2CrossDomainMessenger", getAddress("L2CrossDomainMessenger"));
+        _appendDeployment("L2ToL1MessagePasser", getAddress("L2ToL1MessagePasser"));
+        _appendDeployment("LegacyERC20ETH", getAddress("LegacyERC20ETH"));
     }
 
     /// @notice Internal function containing the deploy logic.

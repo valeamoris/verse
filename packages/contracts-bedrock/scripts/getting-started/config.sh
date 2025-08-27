@@ -121,8 +121,8 @@ if [ -n "${INTEROP_TIME_OFFSET}" ]; then
 fi
 
 # Set custom gas token
-if [ "${USE_CUSTOM_GAS_TOKEN}" = "true" ]; then
-  append_with_default "useCustomGasToken" "USE_CUSTOM_GAS_TOKEN" "false"
+if [ "${USE_CUSTOM_GAS_TOKEN}" == true ]; then
+  echo "  \"useCustomGasToken\": true," >> tmp_config.json
   append_with_default "customGasTokenAddress" "CUSTOM_GAS_TOKEN_ADDRESS" "0x0000000000000000000000000000000000000000"
 fi
 

@@ -40,9 +40,9 @@ reqenv "L1_BLOCK_TIME"
 reqenv "L2_BLOCK_TIME"
 
 # Get the latest block timestamp and hash
-block=$(cast block latest --rpc-url "$L1_RPC_URL")
-timestamp=$(echo "$block" | awk '/timestamp/ { print $2 }')
-blockhash=$(echo "$block" | awk '/hash/ { print $2 }')
+block=$(cast block latest --json --rpc-url "$L1_RPC_URL")
+timestamp=$(echo "$block" | jq -r .timestamp | xargs printf "%d\n")
+blockhash=$(echo "$block" | jq -r .hash)
 
 # Start generating the config file in a temporary file
 
@@ -118,6 +118,12 @@ fi
 # Activate the interop fork
 if [ -n "${INTEROP_TIME_OFFSET}" ]; then
     append_with_default "l2GenesisInteropTimeOffset" "INTEROP_TIME_OFFSET" "0x0"
+fi
+
+# Set custom gas token
+if [ "${USE_CUSTOM_GAS_TOKEN}" = "true" ]; then
+  echo "  \"useCustomGasToken\": true," >> tmp_config.json
+  append_with_default "customGasTokenAddress" "CUSTOM_GAS_TOKEN_ADDRESS" "0x0000000000000000000000000000000000000000"
 fi
 
 # Already forked updates

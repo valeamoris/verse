@@ -149,6 +149,11 @@ ARG OP_DEPLOYER_VERSION=v0.0.0
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build cd op-chain-ops && make op-deployer  \
   GOOS=$TARGETOS GOARCH=$TARGETARCH GITCOMMIT=$GIT_COMMIT GITDATE=$GIT_DATE VERSION="$OP_DEPLOYER_VERSION"
 
+FROM --platform=$BUILDPLATFORM builder AS op-withdrawal-builder
+ARG OP_WITHDRAWAL_VERSION=v0.0.0
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build cd op-chain-ops && make op-withdrawal  \
+  GOOS=$TARGETOS GOARCH=$TARGETARCH GITCOMMIT=$GIT_COMMIT GITDATE=$GIT_DATE VERSION="$OP_WITHDRAWAL_VERSION"
+
 FROM --platform=$BUILDPLATFORM builder AS op-dripper-builder
 ARG OP_DRIPPER_VERSION=v0.0.0
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build cd op-dripper && make op-dripper  \
@@ -238,6 +243,10 @@ CMD ["op-test-sequencer"]
 FROM $TARGET_BASE_IMAGE AS op-deployer-target
 COPY --from=op-deployer-builder /app/op-chain-ops/bin/op-deployer /usr/local/bin/
 CMD ["op-deployer"]
+
+FROM $TARGET_BASE_IMAGE AS op-withdrawal-target
+COPY --from=op-withdrawal-builder /app/op-chain-ops/bin/op-withdrawal /usr/local/bin/
+CMD ["op-withdrawal"]
 
 FROM $TARGET_BASE_IMAGE AS op-dripper-target
 COPY --from=op-dripper-builder /app/op-dripper/bin/op-dripper /usr/local/bin/

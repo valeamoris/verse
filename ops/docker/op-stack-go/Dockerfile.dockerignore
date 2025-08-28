@@ -23,6 +23,7 @@
 !/op-alt-da
 !/op-faucet
 !/op-interop-mon
+!/op-e2e
 !/go.mod
 !/go.sum
 !/justfiles

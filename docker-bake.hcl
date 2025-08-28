@@ -21,7 +21,7 @@ variable "IMAGE_TAGS" {
 }
 
 variable "PLATFORMS" {
-  // You can override this as "linux/amd64,linux/arm64".
+  // You can override this as "linux/amd64,linux/arm64,linux/riscv64".
   // Only specify a single platform when `--load` ing into docker.
   // Multi-platform is supported when outputting to disk or pushing to a registry.
   // Multi-platform builds can be tested locally with:  --set="*.output=type=image,push=false"
@@ -70,6 +70,10 @@ variable "OP_CONDUCTOR_VERSION" {
 }
 
 variable "OP_DEPLOYER_VERSION" {
+  default = "${GIT_VERSION}"
+}
+
+variable "OP_WITHDRAWAL_VERSION" {
   default = "${GIT_VERSION}"
 }
 
@@ -250,6 +254,19 @@ target "op-deployer" {
   target = "op-deployer-target"
   platforms = split(",", PLATFORMS)
   tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-deployer:${tag}"]
+}
+
+target "op-withdrawal" {
+  dockerfile = "ops/docker/op-stack-go/Dockerfile"
+  context = "."
+  args = {
+    GIT_COMMIT = "${GIT_COMMIT}"
+    GIT_DATE = "${GIT_DATE}"
+    OP_WITHDRAWAL_VERSION = "${OP_WITHDRAWAL_VERSION}"
+  }
+  target = "op-withdrawal-target"
+  platforms = split(",", PLATFORMS)
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-withdrawal:${tag}"]
 }
 
 target "op-dripper" {

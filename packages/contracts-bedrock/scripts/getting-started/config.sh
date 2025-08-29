@@ -127,7 +127,7 @@ if [ "${USE_CUSTOM_GAS_TOKEN}" = "true" ]; then
 fi
 
 # Use fault proofs if enabled.
-if [ "$USE_FAULT_PROOFS" = "true" ];then
+if [ "$USE_FAULT_PROOFS" = "true" ]; then
   echo "  \"useFaultProofs\": true," >> tmp_config.json
 fi
 

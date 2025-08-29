@@ -126,6 +126,11 @@ if [ "${USE_CUSTOM_GAS_TOKEN}" = "true" ]; then
   append_with_default "customGasTokenAddress" "CUSTOM_GAS_TOKEN_ADDRESS" "0x0000000000000000000000000000000000000000"
 fi
 
+# Use fault proofs if enabled.
+if [ "$USE_FAULT_PROOFS" = "true" ]; then
+  echo "  \"useFaultProofs\": true," >> tmp_config.json
+fi
+
 # Already forked updates
 append_with_default "l2GenesisFjordTimeOffset" "FJORD_TIME_OFFSET" "0x0"
 append_with_default "l2GenesisRegolithTimeOffset" "REGOLITH_TIME_OFFSET" "0x0"

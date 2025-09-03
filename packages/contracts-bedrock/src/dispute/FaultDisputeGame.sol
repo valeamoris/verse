@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
+import { console } from "forge-std/console.sol";
 import { FixedPointMathLib } from "@solady/utils/FixedPointMathLib.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -202,6 +203,7 @@ contract FaultDisputeGame is IFaultDisputeGame, Clone, ISemver {
 
         // Set the starting output root.
         startingOutputRoot = OutputRoot({ l2BlockNumber: rootBlockNumber, root: root });
+        console.log("-------------------------------------, startingOutputRoot");
 
         // Revert if the calldata size is not the expected length.
         //

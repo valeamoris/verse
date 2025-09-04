@@ -1,23 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import {Math} from "../../lib/openzeppelin-contracts/contracts/utils/math/Math.sol";
-import {Clone} from "../../lib/solady/src/utils/Clone.sol";
-import {FixedPointMathLib} from "../../lib/solady/src/utils/FixedPointMathLib.sol";
-import {IPreimageOracle} from "../cannon/interfaces/IPreimageOracle.sol";
-import {Hashing} from "../libraries/Hashing.sol";
-import {Types} from "../libraries/Types.sol";
-import {RLPReader} from "../libraries/rlp/RLPReader.sol";
-import {ISemver} from "../universal/interfaces/ISemver.sol";
-import {IAnchorStateRegistry} from "./interfaces/IAnchorStateRegistry.sol";
-import {IBigStepper} from "./interfaces/IBigStepper.sol";
-import {IDelayedWETH} from "./interfaces/IDelayedWETH.sol";
-import {IDisputeGame} from "./interfaces/IDisputeGame.sol";
-import {IFaultDisputeGame} from "./interfaces/IFaultDisputeGame.sol";
-import {MaxDepthTooLarge, InvalidSplitDepth, InvalidChallengePeriod, InvalidClockExtension, AlreadyInitialized, AnchorRootNotFound, UnexpectedRootClaim, GameNotInProgress, InvalidParent, InvalidPrestate, ValidStep, DuplicateStep, InvalidDisputedClaimIndex, CannotDefendRootClaim, L2BlockNumberChallenged, GameDepthExceeded, IncorrectBondAmount, ClockTimeExceeded, ClaimAlreadyExists, InvalidLocalIdent, InvalidOutputRootProof, InvalidHeaderRLP, BlockNumberMatches, OutOfOrderResolution, ClockNotExpired, ClaimAlreadyResolved, NoCreditToClaim, BondTransferFailed, ClaimAboveSplit} from "lib/Errors.sol";
-import {Position, LibPosition} from "lib/LibPosition.sol";
-import {Claim, Duration, GameType, Timestamp, Hash, LibClock, Clock} from "lib/LibUDT.sol";
-import {OutputRoot, GameStatus, LocalPreimageKey, VMStatuses} from "lib/Types.sol";
+import { FixedPointMathLib } from "@solady/utils/FixedPointMathLib.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+
+import { IDelayedWETH } from "src/dispute/interfaces/IDelayedWETH.sol";
+import { IDisputeGame } from "src/dispute/interfaces/IDisputeGame.sol";
+import { IFaultDisputeGame } from "src/dispute/interfaces/IFaultDisputeGame.sol";
+import { IInitializable } from "src/dispute/interfaces/IInitializable.sol";
+import { IBigStepper, IPreimageOracle } from "src/dispute/interfaces/IBigStepper.sol";
+import { IAnchorStateRegistry } from "src/dispute/interfaces/IAnchorStateRegistry.sol";
+
+import { Clone } from "@solady/utils/Clone.sol";
+import { Types } from "src/libraries/Types.sol";
+import { ISemver } from "src/universal/interfaces/ISemver.sol";
+
+import { Types } from "src/libraries/Types.sol";
+import { Hashing } from "src/libraries/Hashing.sol";
+import { RLPReader } from "src/libraries/rlp/RLPReader.sol";
+import "src/dispute/lib/Types.sol";
+import "src/dispute/lib/Errors.sol";
 
 /// @title FaultDisputeGame
 /// @notice An implementation of the `IFaultDisputeGame` interface.

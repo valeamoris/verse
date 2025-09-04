@@ -341,6 +341,12 @@ contract Deploy is Deployer {
         if (address(_factory.gameImpls(GameTypes.ASTERISC)) != address(0)) {
             _appendDeployment("AsteriscDisputeAddress", address(_factory.gameImpls(GameTypes.ASTERISC)));
         }
+        if (address(_factory.gameImpls(GameTypes.FAST)) != address(0)) {
+            _appendDeployment("FastDisputeAddress", address(_factory.gameImpls(GameTypes.FAST)));
+        }
+        if (address(_factory.gameImpls(GameTypes.ALPHABET)) != address(0)) {
+            _appendDeployment("AlphabetDisputeAddress", address(_factory.gameImpls(GameTypes.ALPHABET)));
+        }
     }
 
     /// @notice Internal function containing the deploy logic.

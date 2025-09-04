@@ -1,65 +1,67 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {CommonBase} from "../../lib/forge-std/src/Base.sol";
-import {StdChains} from "../../lib/forge-std/src/StdChains.sol";
-import {StdCheatsSafe} from "../../lib/forge-std/src/StdCheats.sol";
-import {stdJson} from "../../lib/forge-std/src/StdJson.sol";
-import {StdUtils} from "../../lib/forge-std/src/StdUtils.sol";
-import {VmSafe} from "../../lib/forge-std/src/Vm.sol";
-import {OwnerManager} from "../../lib/safe-contracts/contracts/base/OwnerManager.sol";
-import {IDataAvailabilityChallenge} from "../../src/L1/interfaces/IDataAvailabilityChallenge.sol";
-import {IL1CrossDomainMessenger} from "../../src/L1/interfaces/IL1CrossDomainMessenger.sol";
-import {IL1ERC721Bridge} from "../../src/L1/interfaces/IL1ERC721Bridge.sol";
-import {IL1StandardBridge} from "../../src/L1/interfaces/IL1StandardBridge.sol";
-import {IL2OutputOracle} from "../../src/L1/interfaces/IL2OutputOracle.sol";
-import {IOptimismPortal} from "../../src/L1/interfaces/IOptimismPortal.sol";
-import {IOptimismPortal2} from "../../src/L1/interfaces/IOptimismPortal2.sol";
-import {IProtocolVersions, ProtocolVersion} from "../../src/L1/interfaces/IProtocolVersions.sol";
-import {ISuperchainConfig} from "../../src/L1/interfaces/ISuperchainConfig.sol";
-import {ISystemConfig} from "../../src/L1/interfaces/ISystemConfig.sol";
-import {MIPS} from "../../src/cannon/MIPS.sol";
-import {PreimageOracle} from "../../src/cannon/PreimageOracle.sol";
-import {IPreimageOracle} from "../../src/cannon/interfaces/IPreimageOracle.sol";
-import {AnchorStateRegistry} from "../../src/dispute/AnchorStateRegistry.sol";
-import {DisputeGameFactory} from "../../src/dispute/DisputeGameFactory.sol";
-import {FaultDisputeGame} from "../../src/dispute/FaultDisputeGame.sol";
-import {PermissionedDisputeGame} from "../../src/dispute/PermissionedDisputeGame.sol";
-import {IBigStepper} from "../../src/dispute/interfaces/IBigStepper.sol";
-import {GameTypes} from "../../src/dispute/lib/Types.sol";
-import {DelayedWETH} from "../../src/dispute/weth/DelayedWETH.sol";
-import {AddressManager} from "../../src/legacy/AddressManager.sol";
-import {L1ChugSplashProxy} from "../../src/legacy/L1ChugSplashProxy.sol";
-import {ResolvedDelegateProxy} from "../../src/legacy/ResolvedDelegateProxy.sol";
-import {Constants} from "../../src/libraries/Constants.sol";
-import {Types} from "../../src/libraries/Types.sol";
-import {Proxy} from "../../src/universal/Proxy.sol";
-import {ProxyAdmin} from "../../src/universal/ProxyAdmin.sol";
-import {StorageSetter} from "../../src/universal/StorageSetter.sol";
-import {ICrossDomainMessenger} from "../../src/universal/interfaces/ICrossDomainMessenger.sol";
-import {IOptimismMintableERC20Factory} from "../../src/universal/interfaces/IOptimismMintableERC20Factory.sol";
-import {AlphabetVM} from "../../test/mocks/AlphabetVM.sol";
-import {EIP1967Helper} from "../../test/mocks/EIP1967Helper.sol";
-import {Artifacts} from "../Artifacts.s.sol";
-import {Chains} from "../libraries/Chains.sol";
-import {Config} from "../libraries/Config.sol";
-import {LibStateDiff} from "../libraries/LibStateDiff.sol";
-import {Process} from "../libraries/Process.sol";
-import {Types} from "../libraries/Types.sol";
-import {ChainAssertions} from "./ChainAssertions.sol";
-import {Deployer} from "./Deployer.sol";
-
 // Testing
+import { VmSafe } from "forge-std/Vm.sol";
+import { Script } from "forge-std/Script.sol";
+import { console2 as console } from "forge-std/console2.sol";
+import { stdJson } from "forge-std/StdJson.sol";
+import { AlphabetVM } from "test/mocks/AlphabetVM.sol";
+import { EIP1967Helper } from "test/mocks/EIP1967Helper.sol";
 
 // Safe
+import { GnosisSafe as Safe } from "safe-contracts/GnosisSafe.sol";
+import { OwnerManager } from "safe-contracts/base/OwnerManager.sol";
+import { GnosisSafeProxyFactory as SafeProxyFactory } from "safe-contracts/proxies/GnosisSafeProxyFactory.sol";
+import { Enum as SafeOps } from "safe-contracts/common/Enum.sol";
 
 // Scripts
+import { Deployer } from "scripts/deploy/Deployer.sol";
+import { Chains } from "scripts/libraries/Chains.sol";
+import { Config } from "scripts/libraries/Config.sol";
+import { LibStateDiff } from "scripts/libraries/LibStateDiff.sol";
+import { Process } from "scripts/libraries/Process.sol";
+import { ForgeArtifacts } from "scripts/libraries/ForgeArtifacts.sol";
+import { ChainAssertions } from "scripts/deploy/ChainAssertions.sol";
 
 // Contracts
+import { ProxyAdmin } from "src/universal/ProxyAdmin.sol";
+import { AddressManager } from "src/legacy/AddressManager.sol";
+import { Proxy } from "src/universal/Proxy.sol";
+import { StandardBridge } from "src/universal/StandardBridge.sol";
+import { L1ChugSplashProxy } from "src/legacy/L1ChugSplashProxy.sol";
+import { ResolvedDelegateProxy } from "src/legacy/ResolvedDelegateProxy.sol";
+import { DisputeGameFactory } from "src/dispute/DisputeGameFactory.sol";
+import { FaultDisputeGame } from "src/dispute/FaultDisputeGame.sol";
+import { PermissionedDisputeGame } from "src/dispute/PermissionedDisputeGame.sol";
+import { DelayedWETH } from "src/dispute/weth/DelayedWETH.sol";
+import { AnchorStateRegistry } from "src/dispute/AnchorStateRegistry.sol";
+import { PreimageOracle } from "src/cannon/PreimageOracle.sol";
+import { MIPS } from "src/cannon/MIPS.sol";
+import { StorageSetter } from "src/universal/StorageSetter.sol";
 
 // Libraries
+import { Constants } from "src/libraries/Constants.sol";
+import { Predeploys } from "src/libraries/Predeploys.sol";
+import { Types } from "scripts/libraries/Types.sol";
+import "src/dispute/lib/Types.sol";
 
 // Interfaces
+import { IOptimismPortal } from "src/L1/interfaces/IOptimismPortal.sol";
+import { IOptimismPortal2 } from "src/L1/interfaces/IOptimismPortal2.sol";
+import { IOptimismPortalInterop } from "src/L1/interfaces/IOptimismPortalInterop.sol";
+import { ICrossDomainMessenger } from "src/universal/interfaces/ICrossDomainMessenger.sol";
+import { IL1CrossDomainMessenger } from "src/L1/interfaces/IL1CrossDomainMessenger.sol";
+import { IL2OutputOracle } from "src/L1/interfaces/IL2OutputOracle.sol";
+import { ISuperchainConfig } from "src/L1/interfaces/ISuperchainConfig.sol";
+import { ISystemConfig } from "src/L1/interfaces/ISystemConfig.sol";
+import { IDataAvailabilityChallenge } from "src/L1/interfaces/IDataAvailabilityChallenge.sol";
+import { IL1ERC721Bridge } from "src/L1/interfaces/IL1ERC721Bridge.sol";
+import { IL1StandardBridge } from "src/L1/interfaces/IL1StandardBridge.sol";
+import { IProtocolVersions, ProtocolVersion } from "src/L1/interfaces/IProtocolVersions.sol";
+import { IBigStepper } from "src/dispute/interfaces/IBigStepper.sol";
+import { IPreimageOracle } from "src/cannon/interfaces/IPreimageOracle.sol";
+import { IOptimismMintableERC20Factory } from "src/universal/interfaces/IOptimismMintableERC20Factory.sol";
 
 /// @title Deploy
 /// @notice Script used to deploy a bedrock system. The entire system is deployed within the `run` function.

@@ -332,23 +332,6 @@ contract Deploy is Deployer {
         _appendDeployment("L2CrossDomainMessenger", getAddress("L2CrossDomainMessenger"));
         _appendDeployment("L2ToL1MessagePasser", getAddress("L2ToL1MessagePasser"));
         _appendDeployment("LegacyERC20ETH", getAddress("LegacyERC20ETH"));
-
-        DisputeGameFactory _factory = DisputeGameFactory(mustGetAddress("DisputeGameFactoryProxy"));
-        if (address(_factory.gameImpls(GameTypes.CANNON)) != address(0)) {
-            _appendDeployment("CannonDisputeAddress", address(_factory.gameImpls(GameTypes.CANNON)));
-        }
-        if (address(_factory.gameImpls(GameTypes.PERMISSIONED_CANNON)) != address(0)) {
-            _appendDeployment("PermissionedDisputeAddress", address(_factory.gameImpls(GameTypes.PERMISSIONED_CANNON)));
-        }
-        if (address(_factory.gameImpls(GameTypes.ASTERISC)) != address(0)) {
-            _appendDeployment("AsteriscDisputeAddress", address(_factory.gameImpls(GameTypes.ASTERISC)));
-        }
-        if (address(_factory.gameImpls(GameTypes.FAST)) != address(0)) {
-            _appendDeployment("FastDisputeAddress", address(_factory.gameImpls(GameTypes.FAST)));
-        }
-        if (address(_factory.gameImpls(GameTypes.ALPHABET)) != address(0)) {
-            _appendDeployment("AlphabetDisputeAddress", address(_factory.gameImpls(GameTypes.ALPHABET)));
-        }
     }
 
     /// @notice Internal function containing the deploy logic.

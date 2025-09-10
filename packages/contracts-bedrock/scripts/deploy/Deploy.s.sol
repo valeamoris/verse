@@ -476,7 +476,7 @@ contract Deploy is Deployer {
         initializeDisputeGameFactory();
         initializeDelayedWETH();
         initializePermissionedDelayedWETH();
-        // initializeAnchorStateRegistry();
+        initializeAnchorStateRegistry();
     }
 
     /// @notice Add AltDA setup to the OP chain

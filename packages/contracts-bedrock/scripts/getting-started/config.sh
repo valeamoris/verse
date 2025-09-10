@@ -101,8 +101,6 @@ cat << EOL > tmp_config.json
   "eip1559Denominator": 50,
   "eip1559DenominatorCanyon": 250,
   "eip1559Elasticity": 6,
-
-  "faultGameGenesisOutputRoot": "$blockhash",
 EOL
 
 # Append conditional environment variables with their corresponding default values
@@ -137,6 +135,8 @@ append_with_default "l2GenesisRegolithTimeOffset" "REGOLITH_TIME_OFFSET" "0x0"
 append_with_default "l2GenesisEcotoneTimeOffset" "ECOTONE_TIME_OFFSET" "0x0"
 append_with_default "l2GenesisDeltaTimeOffset" "DELTA_TIME_OFFSET" "0x0"
 append_with_default "l2GenesisCanyonTimeOffset" "CANYON_TIME_OFFSET" "0x0"
+append_with_default "faultGameAbsolutePrestate" "FAULT_GAME_ABSOLUTE_PRESTATE" "0x034cee66143fa582b4adb290f6ef4a99de2d9eed487a94eefa695ff026956b89"
+append_with_default "faultGameGenesisOutputRoot" "FAULT_GAME_GENESIS_OUTPUT_ROOT" "$blockhash"
 
 # Continue generating the config file
 cat << EOL >> tmp_config.json
@@ -145,7 +145,6 @@ cat << EOL >> tmp_config.json
   "requiredProtocolVersion": "0x0000000000000000000000000000000000000000000000000000000000000000",
   "recommendedProtocolVersion": "0x0000000000000000000000000000000000000000000000000000000000000000",
 
-  "faultGameAbsolutePrestate": "0x03c7ae758795765c6664a5d39bf63841c71ff191e9189522bad8ebff5d4eca98",
   "faultGameMaxDepth": 44,
   "faultGameClockExtension": 0,
   "faultGameMaxClockDuration": 1200,

@@ -476,7 +476,11 @@ contract Deploy is Deployer {
         initializeDisputeGameFactory();
         initializeDelayedWETH();
         initializePermissionedDelayedWETH();
-        initializeAnchorStateRegistry();
+
+        // If fault proofs are not enabled, the PreimageOracle, MIPS, and AnchorStateRegistry will not be used.
+        if (!cfg.useFaultProofs()) {
+            initializeAnchorStateRegistry();
+        }
     }
 
     /// @notice Add AltDA setup to the OP chain

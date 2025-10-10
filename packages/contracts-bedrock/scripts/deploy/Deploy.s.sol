@@ -478,7 +478,7 @@ contract Deploy is Deployer {
         initializePermissionedDelayedWETH();
 
         // If fault proofs are not enabled, the PreimageOracle, MIPS, and AnchorStateRegistry will not be used.
-        if (!cfg.useFaultProofs()) {
+        if (cfg.useFaultProofs()) {
             initializeAnchorStateRegistry();
         }
     }
@@ -777,38 +777,64 @@ contract Deploy is Deployer {
     /// @notice Deploy the DisputeGameFactory
     function deployDisputeGameFactory() public broadcast returns (address addr_) {
         console.log("Deploying DisputeGameFactory implementation");
-        DisputeGameFactory factory = new DisputeGameFactory{ salt: _implSalt() }();
-        save("DisputeGameFactory", address(factory));
-        console.log("DisputeGameFactory deployed at %s", address(factory));
+
+        // 预计算 CREATE2 地址并检查合约是否已存在
+        bytes32 salt = _implSalt();
+        bytes memory initCode = abi.encodePacked(vm.getCode("DisputeGameFactory"));
+        address preComputedAddress = vm.computeCreate2Address(salt, keccak256(initCode));
+
+        if (preComputedAddress.code.length > 0) {
+            console.log("DisputeGameFactory already deployed at %s", preComputedAddress);
+            addr_ = preComputedAddress;
+        } else {
+            // 如果合约不存在，则部署新合约
+            DisputeGameFactory factory = new DisputeGameFactory{ salt: salt }();
+            addr_ = address(factory);
+        }
+        save("DisputeGameFactory", addr_);
+
+        console.log("DisputeGameFactory deployed at %s", addr_);
 
         // Override the `DisputeGameFactory` contract to the deployed implementation. This is necessary to check the
         // `DisputeGameFactory` implementation alongside dependent contracts, which are always proxies.
         Types.ContractSet memory contracts = _proxiesUnstrict();
-        contracts.DisputeGameFactory = address(factory);
+        contracts.DisputeGameFactory = addr_;
         ChainAssertions.checkDisputeGameFactory({ _contracts: contracts, _expectedOwner: address(0) });
-
-        addr_ = address(factory);
     }
 
     function deployDelayedWETH() public broadcast returns (address addr_) {
         console.log("Deploying DelayedWETH implementation");
-        DelayedWETH weth = new DelayedWETH{ salt: _implSalt() }(cfg.faultGameWithdrawalDelay());
-        save("DelayedWETH", address(weth));
-        console.log("DelayedWETH deployed at %s", address(weth));
+
+        // 预计算 CREATE2 地址并检查合约是否已存在
+        bytes32 salt = _implSalt();
+        bytes memory initCode = abi.encodePacked(vm.getCode("DelayedWETH"), abi.encode(cfg.faultGameWithdrawalDelay()));
+        address preComputedAddress = vm.computeCreate2Address(salt, keccak256(initCode));
+
+        if (preComputedAddress.code.length > 0) {
+            console.log("DelayedWETH already deployed at %s", preComputedAddress);
+            addr_ = preComputedAddress;
+        } else {
+            // 如果合约不存在，则部署新合约
+            DelayedWETH weth = new DelayedWETH{ salt: salt }(cfg.faultGameWithdrawalDelay());
+            addr_ = address(weth);
+        }
+
+        // 保存合约地址
+        save("DelayedWETH", addr_);
+
+        console.log("DelayedWETH deployed at %s", addr_);
 
         // Override the `DelayedWETH` contract to the deployed implementation. This is necessary
         // to check the `DelayedWETH` implementation alongside dependent contracts, which are
         // always proxies.
         Types.ContractSet memory contracts = _proxiesUnstrict();
-        contracts.DelayedWETH = address(weth);
+        contracts.DelayedWETH = addr_;
         ChainAssertions.checkDelayedWETH({
             _contracts: contracts,
             _cfg: cfg,
             _isProxy: false,
             _expectedOwner: address(0)
         });
-
-        addr_ = address(weth);
     }
 
     /// @notice Deploy the ProtocolVersions
@@ -828,24 +854,59 @@ contract Deploy is Deployer {
     /// @notice Deploy the PreimageOracle
     function deployPreimageOracle() public broadcast returns (address addr_) {
         console.log("Deploying PreimageOracle implementation");
-        PreimageOracle preimageOracle = new PreimageOracle{ salt: _implSalt() }({
-            _minProposalSize: cfg.preimageOracleMinProposalSize(),
-            _challengePeriod: cfg.preimageOracleChallengePeriod()
-        });
-        save("PreimageOracle", address(preimageOracle));
-        console.log("PreimageOracle deployed at %s", address(preimageOracle));
 
-        addr_ = address(preimageOracle);
+        // 预计算 CREATE2 地址并检查合约是否已存在
+        bytes32 salt = _implSalt();
+        bytes memory initCode = abi.encodePacked(
+            vm.getCode("PreimageOracle"),
+            abi.encode(
+                cfg.preimageOracleMinProposalSize(),
+                cfg.preimageOracleChallengePeriod()
+            )
+        );
+        address preComputedAddress = vm.computeCreate2Address(salt, keccak256(initCode));
+
+        if (preComputedAddress.code.length > 0) {
+            console.log("PreimageOracle already deployed at %s", preComputedAddress);
+            addr_ = preComputedAddress;
+        } else {
+            // 如果合约不存在，则部署新合约
+            PreimageOracle preimageOracle = new PreimageOracle{ salt: salt }({
+                _minProposalSize: cfg.preimageOracleMinProposalSize(),
+                _challengePeriod: cfg.preimageOracleChallengePeriod()
+            });
+            addr_ = address(preimageOracle);
+        }
+
+        // 保存合约地址
+        save("PreimageOracle", addr_);
+        console.log("PreimageOracle deployed at %s", addr_);
     }
 
     /// @notice Deploy Mips
     function deployMips() public broadcast returns (address addr_) {
         console.log("Deploying Mips implementation");
-        MIPS mips = new MIPS{ salt: _implSalt() }(IPreimageOracle(mustGetAddress("PreimageOracle")));
-        save("Mips", address(mips));
-        console.log("MIPS deployed at %s", address(mips));
 
-        addr_ = address(mips);
+        // 预计算 CREATE2 地址并检查合约是否已存在
+        bytes32 salt = _implSalt();
+        bytes memory initCode = abi.encodePacked(
+            vm.getCode("MIPS"),
+            abi.encode(IPreimageOracle(mustGetAddress("PreimageOracle")))
+        );
+        address preComputedAddress = vm.computeCreate2Address(salt, keccak256(initCode));
+
+        if (preComputedAddress.code.length > 0) {
+            console.log("MIPS already deployed at %s", preComputedAddress);
+            addr_ = preComputedAddress;
+        } else {
+            // 如果合约不存在，则部署新合约
+            MIPS mips = new MIPS{ salt: salt }(IPreimageOracle(mustGetAddress("PreimageOracle")));
+            addr_ = address(mips);
+        }
+
+        // 保存合约地址
+        save("Mips", addr_);
+        console.log("MIPS deployed at %s", addr_);
     }
 
     /// @notice Deploy the AnchorStateRegistry
@@ -1645,9 +1706,13 @@ contract Deploy is Deployer {
         bytes32 salt = _implSalt();
         bytes memory initCode = abi.encodePacked(vm.getCode(_name), _constructorParams);
         address preComputedAddress = vm.computeCreate2Address(salt, keccak256(initCode));
-        require(preComputedAddress.code.length == 0, "Deploy: contract already deployed");
-        assembly {
-            addr_ := create2(0, add(initCode, 0x20), mload(initCode), salt)
+        if (preComputedAddress.code.length > 0) {
+            console.log("%s already deployed at %s", _name, preComputedAddress);
+            addr_ = preComputedAddress;
+        } else {
+            assembly {
+                addr_ := create2(0, add(initCode, 0x20), mload(initCode), salt)
+            }
         }
         require(addr_ != address(0), "deployment failed");
         save(_name, addr_);

@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-service/sources/batching"
 	"github.com/ethereum-optimism/optimism/op-service/sources/batching/rpcblock"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
+	"github.com/ethereum-optimism/optimism/packages/contracts-bedrock/snapshots"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -23,15 +24,14 @@ type SuperFaultDisputeGameContractLatest struct {
 }
 
 func NewSuperFaultDisputeGameContract(ctx context.Context, metrics metrics.ContractMetricer, addr common.Address, caller *batching.MultiCaller) (FaultDisputeGameContract, error) {
-	panic("unimplemented")
-	/*contractAbi := snapshots.LoadSuperFaultDisputeGameABI()
+	contractAbi := snapshots.LoadSuperFaultDisputeGameABI()
 	return &SuperFaultDisputeGameContractLatest{
 		FaultDisputeGameContractLatest: FaultDisputeGameContractLatest{
 			metrics:     metrics,
 			multiCaller: caller,
 			contract:    batching.NewBoundContract(contractAbi, addr),
 		},
-	}, nil*/
+	}, nil
 }
 
 // GetGameMetadata returns the game's L1 head, L2 block number, root claim, status, max clock duration, and is l2 block number challenged.

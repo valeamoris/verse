@@ -1,5 +1,17 @@
+variable "REGISTRY" {
+  default = "us-docker.pkg.dev"
+}
+
 variable "REPOSITORY" {
-  default = "rothcold"
+  default = "oplabs-tools-artifacts/images"
+}
+
+variable "KONA_VERSION" {
+  default = "1.0.1"
+}
+
+variable "ASTERISC_VERSION" {
+  default = "v1.3.0"
 }
 
 variable "GIT_COMMIT" {
@@ -21,7 +33,7 @@ variable "IMAGE_TAGS" {
 }
 
 variable "PLATFORMS" {
-  // You can override this as "linux/amd64,linux/arm64,linux/riscv64".
+  // You can override this as "linux/amd64,linux/arm64".
   // Only specify a single platform when `--load` ing into docker.
   // Multi-platform is supported when outputting to disk or pushing to a registry.
   // Multi-platform builds can be tested locally with:  --set="*.output=type=image,push=false"
@@ -73,10 +85,6 @@ variable "OP_DEPLOYER_VERSION" {
   default = "${GIT_VERSION}"
 }
 
-variable "OP_WITHDRAWAL_VERSION" {
-  default = "${GIT_VERSION}"
-}
-
 variable "OP_DRIPPER_VERSION" {
   default = "${GIT_VERSION}"
 }
@@ -100,7 +108,7 @@ target "op-node" {
   }
   target = "op-node-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-node:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-node:${tag}"]
 }
 
 target "op-batcher" {
@@ -113,7 +121,7 @@ target "op-batcher" {
   }
   target = "op-batcher-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-batcher:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-batcher:${tag}"]
 }
 
 target "op-proposer" {
@@ -126,7 +134,7 @@ target "op-proposer" {
   }
   target = "op-proposer-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-proposer:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-proposer:${tag}"]
 }
 
 target "op-challenger" {
@@ -136,10 +144,12 @@ target "op-challenger" {
     GIT_COMMIT = "${GIT_COMMIT}"
     GIT_DATE = "${GIT_DATE}"
     OP_CHALLENGER_VERSION = "${OP_CHALLENGER_VERSION}"
+    KONA_VERSION="${KONA_VERSION}"
+    ASTERISC_VERSION="${ASTERISC_VERSION}"
   }
   target = "op-challenger-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-challenger:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-challenger:${tag}"]
 }
 
 target "op-dispute-mon" {
@@ -152,7 +162,7 @@ target "op-dispute-mon" {
   }
   target = "op-dispute-mon-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-dispute-mon:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-dispute-mon:${tag}"]
 }
 
 target "op-conductor" {
@@ -165,7 +175,7 @@ target "op-conductor" {
   }
   target = "op-conductor-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-conductor:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-conductor:${tag}"]
 }
 
 target "da-server" {
@@ -177,7 +187,7 @@ target "da-server" {
   }
   target = "da-server-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/da-server:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/da-server:${tag}"]
 }
 
 target "op-program" {
@@ -190,7 +200,7 @@ target "op-program" {
   }
   target = "op-program-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-program:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-program:${tag}"]
 }
 
 target "op-supervisor" {
@@ -203,7 +213,7 @@ target "op-supervisor" {
   }
   target = "op-supervisor-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-supervisor:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-supervisor:${tag}"]
 }
 
 target "op-test-sequencer" {
@@ -216,7 +226,7 @@ target "op-test-sequencer" {
   }
   target = "op-test-sequencer-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-test-sequencer:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-test-sequencer:${tag}"]
 }
 
 target "cannon" {
@@ -229,7 +239,7 @@ target "cannon" {
   }
   target = "cannon-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-cannon:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/cannon:${tag}"]
 }
 
 target "holocene-deployer" {
@@ -240,7 +250,7 @@ target "holocene-deployer" {
   }
   target="holocene-deployer"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/holocene-deployer:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/holocene-deployer:${tag}"]
 }
 
 target "op-deployer" {
@@ -253,20 +263,7 @@ target "op-deployer" {
   }
   target = "op-deployer-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-deployer:${tag}"]
-}
-
-target "op-withdrawal" {
-  dockerfile = "ops/docker/op-stack-go/Dockerfile"
-  context = "."
-  args = {
-    GIT_COMMIT = "${GIT_COMMIT}"
-    GIT_DATE = "${GIT_DATE}"
-    OP_WITHDRAWAL_VERSION = "${OP_WITHDRAWAL_VERSION}"
-  }
-  target = "op-withdrawal-target"
-  platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-withdrawal:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-deployer:${tag}"]
 }
 
 target "op-dripper" {
@@ -279,7 +276,7 @@ target "op-dripper" {
   }
   target = "op-dripper-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-dripper:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-dripper:${tag}"]
 }
 
 target "op-faucet" {
@@ -292,7 +289,7 @@ target "op-faucet" {
   }
   target = "op-faucet-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-faucet:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-faucet:${tag}"]
 }
 
 target "op-interop-mon" {
@@ -305,5 +302,5 @@ target "op-interop-mon" {
   }
   target = "op-interop-mon-target"
   platforms = split(",", PLATFORMS)
-  tags = [for tag in split(",", IMAGE_TAGS) : "${REPOSITORY}/verse-interop-mon:${tag}"]
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-interop-mon:${tag}"]
 }

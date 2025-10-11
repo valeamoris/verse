@@ -40,9 +40,9 @@ reqenv "L1_BLOCK_TIME"
 reqenv "L2_BLOCK_TIME"
 
 # Get the latest block timestamp and hash
-block=$(cast block latest --json --rpc-url "$L1_RPC_URL")
-timestamp=$(echo "$block" | jq -r .timestamp | xargs printf "%d\n")
-blockhash=$(echo "$block" | jq -r .hash)
+block=$(cast block latest --rpc-url "$L1_RPC_URL")
+timestamp=$(echo "$block" | awk '/timestamp/ { print $2 }')
+blockhash=$(echo "$block" | awk '/hash/ { print $2 }')
 
 # Start generating the config file in a temporary file
 
@@ -64,7 +64,7 @@ cat << EOL > tmp_config.json
   "batchInboxAddress": "0xff00000000000000000000000000000000042069",
   "batchSenderAddress": "$GS_BATCHER_ADDRESS",
 
-  "l2OutputOracleSubmissionInterval": 6,
+  "l2OutputOracleSubmissionInterval": 120,
   "l2OutputOracleStartingBlockNumber": 0,
   "l2OutputOracleStartingTimestamp": $timestamp,
 
@@ -118,25 +118,12 @@ if [ -n "${INTEROP_TIME_OFFSET}" ]; then
     append_with_default "l2GenesisInteropTimeOffset" "INTEROP_TIME_OFFSET" "0x0"
 fi
 
-# Set custom gas token
-if [ "${USE_CUSTOM_GAS_TOKEN}" = "true" ]; then
-  echo "  \"useCustomGasToken\": true," >> tmp_config.json
-  append_with_default "customGasTokenAddress" "CUSTOM_GAS_TOKEN_ADDRESS" "0x0000000000000000000000000000000000000000"
-fi
-
-# Use fault proofs if enabled.
-if [ "$USE_FAULT_PROOFS" = "true" ]; then
-  echo "  \"useFaultProofs\": true," >> tmp_config.json
-fi
-
 # Already forked updates
 append_with_default "l2GenesisFjordTimeOffset" "FJORD_TIME_OFFSET" "0x0"
 append_with_default "l2GenesisRegolithTimeOffset" "REGOLITH_TIME_OFFSET" "0x0"
 append_with_default "l2GenesisEcotoneTimeOffset" "ECOTONE_TIME_OFFSET" "0x0"
 append_with_default "l2GenesisDeltaTimeOffset" "DELTA_TIME_OFFSET" "0x0"
 append_with_default "l2GenesisCanyonTimeOffset" "CANYON_TIME_OFFSET" "0x0"
-append_with_default "faultGameAbsolutePrestate" "FAULT_GAME_ABSOLUTE_PRESTATE" "0x034cee66143fa582b4adb290f6ef4a99de2d9eed487a94eefa695ff026956b89"
-append_with_default "faultGameGenesisOutputRoot" "FAULT_GAME_GENESIS_OUTPUT_ROOT" "$blockhash"
 
 # Continue generating the config file
 cat << EOL >> tmp_config.json
@@ -145,10 +132,12 @@ cat << EOL >> tmp_config.json
   "requiredProtocolVersion": "0x0000000000000000000000000000000000000000000000000000000000000000",
   "recommendedProtocolVersion": "0x0000000000000000000000000000000000000000000000000000000000000000",
 
+  "faultGameAbsolutePrestate": "0x03c7ae758795765c6664a5d39bf63841c71ff191e9189522bad8ebff5d4eca98",
   "faultGameMaxDepth": 44,
   "faultGameClockExtension": 0,
   "faultGameMaxClockDuration": 1200,
   "faultGameGenesisBlock": 0,
+  "faultGameGenesisOutputRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
   "faultGameSplitDepth": 14,
   "faultGameWithdrawalDelay": 600,
 

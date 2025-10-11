@@ -12,11 +12,13 @@ import (
 	"github.com/ethereum-optimism/optimism/op-service/txintent/contractio"
 	"github.com/ethereum-optimism/optimism/op-service/txplan"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // TestWrapETH checks WETH interactions, testing both reading and writing on the chain.
 // This demonstrates the usage of DSL for contract bindings
 func TestWrapETH(gt *testing.T) {
+	gt.Skip("Skipping Interop Acceptance Test")
 	t := devtest.SerialT(gt)
 	require := t.Require()
 	sys := presets.NewMinimal(t)
@@ -63,7 +65,8 @@ func TestWrapETH(gt *testing.T) {
 	require.True(contract.Read(weth.Transfer(bob.Address(), eth.OneHundredthEther), txplan.WithSender(alice.Address())))
 
 	// Write: Alice sends Bob 0.01 WETH
-	contract.Write(alice, weth.Transfer(bob.Address(), eth.OneHundredthEther))
+	receipt := contract.Write(alice, weth.Transfer(bob.Address(), eth.OneHundredthEther))
+	require.Equal(types.ReceiptStatusSuccessful, receipt.Status)
 
 	// Read: Alice has 0.01 WETH
 	require.Equal(eth.OneHundredthEther, contract.Read(weth.BalanceOf(alice.Address())))

@@ -30,14 +30,16 @@ const (
 	CannonGameType            GameType = 0
 	PermissionedGameType      GameType = 1
 	AsteriscGameType          GameType = 2
-	AsteriscKonaGameType      GameType = 3 // TODO: unused
-	SuperCannonGameType       GameType = 4 // TODO: unused
-	SuperPermissionedGameType GameType = 5 // TODO: unused
-	OPSuccinctGameType        GameType = 6 // TODO: unused
-	SuperAsteriscKonaGameType GameType = 7 // TODO: unused
+	AsteriscKonaGameType      GameType = 3
+	SuperCannonGameType       GameType = 4
+	SuperPermissionedGameType GameType = 5
+	OPSuccinctGameType        GameType = 6
+	SuperAsteriscKonaGameType GameType = 7
+	CannonKonaGameType        GameType = 8
+	SuperCannonKonaGameType   GameType = 9
 	FastGameType              GameType = 254
 	AlphabetGameType          GameType = 255
-	KailuaGameType            GameType = 1337 // TODO: unused
+	KailuaGameType            GameType = 1337
 	UnknownGameType           GameType = math.MaxUint32
 )
 
@@ -63,6 +65,10 @@ func (t GameType) String() string {
 		return "op-succinct"
 	case SuperAsteriscKonaGameType:
 		return "super-asterisc-kona"
+	case CannonKonaGameType:
+		return "cannon-kona"
+	case SuperCannonKonaGameType:
+		return "super-cannon-kona"
 	case FastGameType:
 		return "fast"
 	case AlphabetGameType:
@@ -80,6 +86,7 @@ const (
 	TraceTypeAlphabet          TraceType = "alphabet"
 	TraceTypeFast              TraceType = "fast"
 	TraceTypeCannon            TraceType = "cannon"
+	TraceTypeCannonKona        TraceType = "cannon-kona"
 	TraceTypeAsterisc          TraceType = "asterisc"
 	TraceTypeAsteriscKona      TraceType = "asterisc-kona"
 	TraceTypePermissioned      TraceType = "permissioned"
@@ -88,7 +95,7 @@ const (
 	TraceTypeSuperAsteriscKona TraceType = "super-asterisc-kona"
 )
 
-var TraceTypes = []TraceType{TraceTypeAlphabet, TraceTypeCannon, TraceTypePermissioned, TraceTypeAsterisc, TraceTypeAsteriscKona, TraceTypeFast, TraceTypeSuperCannon, TraceTypeSuperPermissioned, TraceTypeSuperAsteriscKona}
+var TraceTypes = []TraceType{TraceTypeAlphabet, TraceTypeCannon, TraceTypeCannonKona, TraceTypePermissioned, TraceTypeAsterisc, TraceTypeAsteriscKona, TraceTypeFast, TraceTypeSuperCannon, TraceTypeSuperPermissioned, TraceTypeSuperAsteriscKona}
 
 func (t TraceType) String() string {
 	return string(t)
@@ -116,6 +123,8 @@ func (t TraceType) GameType() GameType {
 	switch t {
 	case TraceTypeCannon:
 		return CannonGameType
+	case TraceTypeCannonKona:
+		return CannonKonaGameType
 	case TraceTypePermissioned:
 		return PermissionedGameType
 	case TraceTypeAsterisc:

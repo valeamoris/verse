@@ -6,10 +6,12 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 
 	altda "github.com/ethereum-optimism/optimism/op-alt-da"
 	"github.com/ethereum-optimism/optimism/op-node/metrics"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/attributes"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/engine"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/sync"
@@ -33,36 +35,36 @@ type Driver struct {
 }
 
 func NewDriver(logger log.Logger, cfg *rollup.Config, depSet derive.DependencySet, l1Source derive.L1Fetcher,
-	l1BlobsSource derive.L1BlobsFetcher, l2Source engine.Engine, targetBlockNum uint64) *Driver {
+	l1BlobsSource derive.L1BlobsFetcher, l2Source engine.Engine, targetBlockNum uint64, l1ChainConfig *params.ChainConfig) *Driver {
 
 	d := &Driver{
 		logger: logger,
 	}
 
-	pipeline := derive.NewDerivationPipeline(logger, cfg, depSet, l1Source, l1BlobsSource, altda.Disabled, l2Source, metrics.NoopMetrics, false)
+	pipeline := derive.NewDerivationPipeline(logger, cfg, depSet, l1Source, l1BlobsSource, altda.Disabled, l2Source, metrics.NoopMetrics, false, l1ChainConfig)
 	pipelineDeriver := derive.NewPipelineDeriver(context.Background(), pipeline)
 	pipelineDeriver.AttachEmitter(d)
 
-	ec := engine.NewEngineController(l2Source, logger, metrics.NoopMetrics, cfg, &sync.Config{SyncMode: sync.CLSync}, d)
-	engineDeriv := engine.NewEngDeriver(logger, context.Background(), cfg, metrics.NoopMetrics, ec)
-	engineDeriv.AttachEmitter(d)
 	syncCfg := &sync.Config{SyncMode: sync.CLSync}
-	engResetDeriv := engine.NewEngineResetDeriver(context.Background(), logger, cfg, l1Source, l2Source, syncCfg)
-	engResetDeriv.AttachEmitter(d)
+	ec := engine.NewEngineController(context.Background(), l2Source, logger, metrics.NoopMetrics, cfg, syncCfg, l1Source, d)
+
+	attrHandler := attributes.NewAttributesHandler(logger, cfg, context.Background(), l2Source, ec)
+	ec.SetAttributesResetter(attrHandler)
+	ec.SetPipelineResetter(pipelineDeriver)
 
 	prog := &ProgramDeriver{
-		logger:         logger,
-		Emitter:        d,
-		closing:        false,
-		result:         eth.L2BlockRef{},
-		targetBlockNum: targetBlockNum,
+		logger:           logger,
+		Emitter:          d,
+		engineController: ec,
+		closing:          false,
+		result:           eth.L2BlockRef{},
+		targetBlockNum:   targetBlockNum,
 	}
 
 	d.deriver = &event.DeriverMux{
 		prog,
-		engineDeriv,
+		ec,
 		pipelineDeriver,
-		engResetDeriv,
 	}
 	d.end = prog
 

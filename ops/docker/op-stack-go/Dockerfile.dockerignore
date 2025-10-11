@@ -23,11 +23,11 @@
 !/op-alt-da
 !/op-faucet
 !/op-interop-mon
-!/op-e2e
 !/go.mod
 !/go.sum
 !/justfiles
 !/mise.toml
+!/op-e2e/e2eutils
 
 **/bin
 **/testdata

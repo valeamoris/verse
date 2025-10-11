@@ -106,11 +106,11 @@ var versions = []contractVersion{
 		gameType: faultTypes.CannonGameType,
 		loadAbi:  snapshots.LoadFaultDisputeGameABI,
 	},
-	//{
-	//	version:  verSuperCannon,
-	//	gameType: faultTypes.SuperCannonGameType,
-	//	loadAbi:  snapshots.LoadSuperFaultDisputeGameABI,
-	//},
+	{
+		version:  verSuperCannon,
+		gameType: faultTypes.SuperCannonGameType,
+		loadAbi:  snapshots.LoadSuperFaultDisputeGameABI,
+	},
 }
 
 func TestSimpleGetters(t *testing.T) {
@@ -231,26 +231,26 @@ func TestSimpleGetters(t *testing.T) {
 	}
 }
 
-//func TestBondDistributionMode(t *testing.T) {
-//	unsupportedVersions := []string{vers080, vers0180, vers111, vers120, vers131}
-//	for _, version := range versions {
-//		version := version
-//		t.Run(version.String(), func(t *testing.T) {
-//			supported := !slices.Contains(unsupportedVersions, version.version)
-//			stubRpc, game := setupFaultDisputeGameTest(t, version)
-//			if supported {
-//				stubRpc.SetResponse(fdgAddr, methodBondDistributionMode, rpcblock.Latest, nil, []interface{}{faultTypes.RefundDistributionMode})
-//			}
-//			status, err := game.GetBondDistributionMode(context.Background(), rpcblock.Latest)
-//			require.NoError(t, err)
-//			if supported {
-//				require.Equal(t, faultTypes.RefundDistributionMode, status)
-//			} else {
-//				require.Equal(t, faultTypes.LegacyDistributionMode, status)
-//			}
-//		})
-//	}
-//}
+func TestBondDistributionMode(t *testing.T) {
+	unsupportedVersions := []string{vers080, vers0180, vers111, vers120, vers131}
+	for _, version := range versions {
+		version := version
+		t.Run(version.String(), func(t *testing.T) {
+			supported := !slices.Contains(unsupportedVersions, version.version)
+			stubRpc, game := setupFaultDisputeGameTest(t, version)
+			if supported {
+				stubRpc.SetResponse(fdgAddr, methodBondDistributionMode, rpcblock.Latest, nil, []interface{}{faultTypes.RefundDistributionMode})
+			}
+			status, err := game.GetBondDistributionMode(context.Background(), rpcblock.Latest)
+			require.NoError(t, err)
+			if supported {
+				require.Equal(t, faultTypes.RefundDistributionMode, status)
+			} else {
+				require.Equal(t, faultTypes.LegacyDistributionMode, status)
+			}
+		})
+	}
+}
 
 func TestClock_EncodingDecoding(t *testing.T) {
 	t.Run("DurationAndTimestamp", func(t *testing.T) {
@@ -544,8 +544,8 @@ func TestGetBlockRange(t *testing.T) {
 			expectedStart := uint64(65)
 			expectedEnd := uint64(102)
 			if version.IsSuperGame() {
-				//stubRpc.SetResponse(fdgAddr, methodStartingSequenceNumber, rpcblock.Latest, nil, []interface{}{new(big.Int).SetUint64(expectedStart)})
-				//stubRpc.SetResponse(fdgAddr, methodL2SequenceNumber, rpcblock.Latest, nil, []interface{}{new(big.Int).SetUint64(expectedEnd)})
+				stubRpc.SetResponse(fdgAddr, methodStartingSequenceNumber, rpcblock.Latest, nil, []interface{}{new(big.Int).SetUint64(expectedStart)})
+				stubRpc.SetResponse(fdgAddr, methodL2SequenceNumber, rpcblock.Latest, nil, []interface{}{new(big.Int).SetUint64(expectedEnd)})
 			} else {
 				stubRpc.SetResponse(fdgAddr, methodStartingBlockNumber, rpcblock.Latest, nil, []interface{}{new(big.Int).SetUint64(expectedStart)})
 				stubRpc.SetResponse(fdgAddr, methodL2BlockNumber, rpcblock.Latest, nil, []interface{}{new(big.Int).SetUint64(expectedEnd)})
@@ -587,7 +587,7 @@ func TestGetGameMetadata(t *testing.T) {
 			block := rpcblock.ByNumber(889)
 			stubRpc.SetResponse(fdgAddr, methodL1Head, block, nil, []interface{}{expectedL1Head})
 			if version.IsSuperGame() {
-				//stubRpc.SetResponse(fdgAddr, methodL2SequenceNumber, block, nil, []interface{}{new(big.Int).SetUint64(expectedL2BlockNumber)})
+				stubRpc.SetResponse(fdgAddr, methodL2SequenceNumber, block, nil, []interface{}{new(big.Int).SetUint64(expectedL2BlockNumber)})
 			} else {
 				stubRpc.SetResponse(fdgAddr, methodL2BlockNumber, block, nil, []interface{}{new(big.Int).SetUint64(expectedL2BlockNumber)})
 			}
@@ -766,6 +766,9 @@ func TestFaultDisputeGame_IsResolved(t *testing.T) {
 						ContractIndex: idx,
 						ClaimData: faultTypes.ClaimData{
 							Bond: bond,
+						},
+						Clock: faultTypes.Clock{
+							Timestamp: time.Unix(0, 0),
 						},
 					})
 				}

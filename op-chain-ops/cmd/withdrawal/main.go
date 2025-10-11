@@ -4,28 +4,17 @@ import (
 	"context"
 	"os"
 
-	"github.com/ethereum-optimism/optimism/op-chain-ops/version"
-	opservice "github.com/ethereum-optimism/optimism/op-service"
 	"github.com/ethereum-optimism/optimism/op-service/ctxinterrupt"
 	oplog "github.com/ethereum-optimism/optimism/op-service/log"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli/v2"
 )
 
-var (
-	GitCommit = ""
-	GitDate   = ""
-)
-
-// VersionWithMeta holds the textual version string including the metadata.
-var VersionWithMeta = opservice.FormatVersion(version.Version, GitCommit, GitDate, version.Meta)
-
 func main() {
 	ctx := ctxinterrupt.WithSignalWaiterMain(context.Background())
 	oplog.SetupDefaults()
 
 	app := cli.NewApp()
-	app.Version = VersionWithMeta
 	app.Name = "withdrawal"
 	app.Usage = "Tool to perform withdrawals from OP Stack chains"
 	app.Commands = []*cli.Command{

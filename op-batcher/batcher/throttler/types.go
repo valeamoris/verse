@@ -15,6 +15,10 @@ type ThrottleParams struct {
 	Intensity float64
 }
 
+func (p ThrottleParams) IsThrottling() bool {
+	return p.Intensity > 0
+}
+
 // ThrottleStrategy defines the interface for throttle strategies using the Strategy pattern
 // Strategies now only calculate intensity; the controller handles interpolation to final parameters
 type ThrottleStrategy interface {
@@ -31,8 +35,8 @@ type ThrottleStrategy interface {
 
 // ThrottleConfig holds the configuration parameters for throttling
 type ThrottleConfig struct {
-	Threshold         uint64
-	ThrottleTxSize    uint64
-	ThrottleBlockSize uint64
-	AlwaysBlockSize   uint64
+	TxSizeLowerLimit    uint64
+	TxSizeUpperLimit    uint64
+	BlockSizeLowerLimit uint64
+	BlockSizeUpperLimit uint64
 }

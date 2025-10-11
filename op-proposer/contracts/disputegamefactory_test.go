@@ -27,6 +27,7 @@ func TestHasProposedSince(t *testing.T) {
 		abi  *abi.ABI
 	}{
 		{"FaultDisputeGame", snapshots.LoadFaultDisputeGameABI()},
+		{"SuperFaultDisputeGame", snapshots.LoadSuperFaultDisputeGameABI()},
 	}
 
 	for _, contractType := range gameContractTypes {

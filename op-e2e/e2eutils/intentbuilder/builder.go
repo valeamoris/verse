@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/ethereum-optimism/optimism/op-chain-ops/addresses"
 	"github.com/ethereum-optimism/optimism/op-chain-ops/devkeys"
@@ -28,6 +29,9 @@ type L1Configurator interface {
 	WithGasLimit(v uint64) L1Configurator
 	WithExcessBlobGas(v uint64) L1Configurator
 	WithPragueOffset(v uint64) L1Configurator
+	WithOsakaOffset(v uint64) L1Configurator
+	WithBPO1Offset(v uint64) L1Configurator
+	WithL1BlobSchedule(schedule *params.BlobScheduleConfig) L1Configurator
 	WithPrefundedAccount(addr common.Address, amount uint256.Int) L1Configurator
 }
 
@@ -156,7 +160,6 @@ func RoleToAddrProvider(t require.TestingT, dk devkeys.Keys, chainID eth.ChainID
 }
 
 type intentBuilder struct {
-	t                require.TestingT
 	l1StartBlockHash *common.Hash
 	intent           *state.Intent
 }
@@ -195,6 +198,7 @@ func (b *intentBuilder) WithL2(l2ChainID eth.ChainID) (Builder, L2Configurator) 
 		Eip1559DenominatorCanyon: standard.Eip1559DenominatorCanyon,
 		Eip1559Denominator:       standard.Eip1559Denominator,
 		Eip1559Elasticity:        standard.Eip1559Elasticity,
+		GasLimit:                 standard.GasLimit,
 		DeployOverrides:          make(map[string]any),
 	}
 	b.intent.Chains = append(b.intent.Chains, chainIntent)
@@ -219,7 +223,9 @@ func (b *intentBuilder) WithGlobalOverride(key string, value any) Builder {
 }
 
 func (b *intentBuilder) Build() (*state.Intent, error) {
-	require.NoError(b.t, b.intent.Check(), "invalid intent")
+	if err := b.intent.Check(); err != nil {
+		return nil, fmt.Errorf("check intent: %w", err)
+	}
 	return b.intent, nil
 }
 
@@ -298,6 +304,24 @@ func (c *l1Configurator) WithExcessBlobGas(v uint64) L1Configurator {
 func (c *l1Configurator) WithPragueOffset(v uint64) L1Configurator {
 	c.initL1DevGenesisParams()
 	c.builder.intent.L1DevGenesisParams.PragueTimeOffset = &v
+	return c
+}
+
+func (c *l1Configurator) WithOsakaOffset(v uint64) L1Configurator {
+	c.initL1DevGenesisParams()
+	c.builder.intent.L1DevGenesisParams.OsakaTimeOffset = &v
+	return c
+}
+
+func (c *l1Configurator) WithBPO1Offset(v uint64) L1Configurator {
+	c.initL1DevGenesisParams()
+	c.builder.intent.L1DevGenesisParams.BPO1TimeOffset = &v
+	return c
+}
+
+func (c *l1Configurator) WithL1BlobSchedule(schedule *params.BlobScheduleConfig) L1Configurator {
+	c.initL1DevGenesisParams()
+	c.builder.intent.L1DevGenesisParams.BlobSchedule = schedule
 	return c
 }
 

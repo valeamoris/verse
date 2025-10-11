@@ -4,9 +4,7 @@ pragma solidity 0.8.15;
 import { Script } from "forge-std/Script.sol";
 import { console2 as console } from "forge-std/console2.sol";
 import { stdJson } from "forge-std/StdJson.sol";
-import { Executables } from "scripts/libraries/Executables.sol";
 import { Process } from "scripts/libraries/Process.sol";
-import { Chains } from "scripts/libraries/Chains.sol";
 import { Config, Fork, ForkUtils } from "scripts/libraries/Config.sol";
 
 /// @title DeployConfig
@@ -26,23 +24,19 @@ contract DeployConfig is Script {
     address public superchainConfigGuardian;
     uint256 public l1ChainID;
     uint256 public l2ChainID;
-    uint256 public l2BlockTime;
     uint256 public l2GenesisDeltaTimeOffset;
     uint256 public l2GenesisEcotoneTimeOffset;
     uint256 public l2GenesisFjordTimeOffset;
     uint256 public l2GenesisGraniteTimeOffset;
-    uint256 public maxSequencerDrift;
-    uint256 public sequencerWindowSize;
-    uint256 public channelTimeout;
+    uint256 public l2GenesisHoloceneTimeOffset;
+    uint256 public l2GenesisJovianTimeOffset;
     address public p2pSequencerAddress;
     address public batchInboxAddress;
     address public batchSenderAddress;
-    uint256 public l2OutputOracleSubmissionInterval;
     int256 internal _l2OutputOracleStartingTimestamp;
     uint256 public l2OutputOracleStartingBlockNumber;
     address public l2OutputOracleProposer;
     address public l2OutputOracleChallenger;
-    uint256 public finalizationPeriodSeconds;
     bool public fundDevAccounts;
     address public proxyAdminOwner;
     address public baseFeeVaultRecipient;
@@ -54,15 +48,11 @@ contract DeployConfig is Script {
     address public sequencerFeeVaultRecipient;
     uint256 public sequencerFeeVaultMinimumWithdrawalAmount;
     uint256 public sequencerFeeVaultWithdrawalNetwork;
-    string public governanceTokenName;
-    string public governanceTokenSymbol;
     address public governanceTokenOwner;
     uint256 public l2GenesisBlockGasLimit;
     uint32 public basefeeScalar;
     uint32 public blobbasefeeScalar;
     bool public enableGovernance;
-    uint256 public eip1559Denominator;
-    uint256 public eip1559Elasticity;
     uint256 public faultGameAbsolutePrestate;
     uint256 public faultGameGenesisBlock;
     bytes32 public faultGameGenesisOutputRoot;
@@ -79,7 +69,6 @@ contract DeployConfig is Script {
     uint256 public proofMaturityDelaySeconds;
     uint256 public disputeGameFinalityDelaySeconds;
     uint256 public respectedGameType;
-    bool public useFaultProofs;
     bool public useAltDA;
     string public daCommitmentType;
     uint256 public daChallengeWindow;
@@ -87,42 +76,43 @@ contract DeployConfig is Script {
     uint256 public daBondSize;
     uint256 public daResolverRefundPercentage;
 
-    bool public useCustomGasToken;
-    address public customGasTokenAddress;
+    // V2 Dispute Game Configuration
+    uint256 public faultGameV2MaxGameDepth;
+    uint256 public faultGameV2SplitDepth;
+    uint256 public faultGameV2ClockExtension;
+    uint256 public faultGameV2MaxClockDuration;
 
     bool public useInterop;
+    bool public useUpgradedFork;
+    bytes32 public devFeatureBitmap;
 
     function read(string memory _path) public {
         console.log("DeployConfig: reading file %s", _path);
-        try vm.readFile(_path) returns (string memory data) {
-            _json = data;
+        try vm.readFile(_path) returns (string memory data_) {
+            _json = data_;
         } catch {
-            require(false, string.concat("Cannot find deploy config file at ", _path));
+            require(false, string.concat("DeployConfig: cannot find deploy config file at ", _path));
         }
 
         finalSystemOwner = stdJson.readAddress(_json, "$.finalSystemOwner");
         superchainConfigGuardian = stdJson.readAddress(_json, "$.superchainConfigGuardian");
         l1ChainID = stdJson.readUint(_json, "$.l1ChainID");
         l2ChainID = stdJson.readUint(_json, "$.l2ChainID");
-        l2BlockTime = stdJson.readUint(_json, "$.l2BlockTime");
 
         l2GenesisDeltaTimeOffset = _readOr(_json, "$.l2GenesisDeltaTimeOffset", NULL_OFFSET);
         l2GenesisEcotoneTimeOffset = _readOr(_json, "$.l2GenesisEcotoneTimeOffset", NULL_OFFSET);
         l2GenesisFjordTimeOffset = _readOr(_json, "$.l2GenesisFjordTimeOffset", NULL_OFFSET);
         l2GenesisGraniteTimeOffset = _readOr(_json, "$.l2GenesisGraniteTimeOffset", NULL_OFFSET);
+        l2GenesisHoloceneTimeOffset = _readOr(_json, "$.l2GenesisHoloceneTimeOffset", NULL_OFFSET);
+        l2GenesisJovianTimeOffset = _readOr(_json, "$.l2GenesisJovianTimeOffset", NULL_OFFSET);
 
-        maxSequencerDrift = stdJson.readUint(_json, "$.maxSequencerDrift");
-        sequencerWindowSize = stdJson.readUint(_json, "$.sequencerWindowSize");
-        channelTimeout = stdJson.readUint(_json, "$.channelTimeout");
         p2pSequencerAddress = stdJson.readAddress(_json, "$.p2pSequencerAddress");
         batchInboxAddress = stdJson.readAddress(_json, "$.batchInboxAddress");
         batchSenderAddress = stdJson.readAddress(_json, "$.batchSenderAddress");
-        l2OutputOracleSubmissionInterval = stdJson.readUint(_json, "$.l2OutputOracleSubmissionInterval");
         _l2OutputOracleStartingTimestamp = stdJson.readInt(_json, "$.l2OutputOracleStartingTimestamp");
         l2OutputOracleStartingBlockNumber = stdJson.readUint(_json, "$.l2OutputOracleStartingBlockNumber");
         l2OutputOracleProposer = stdJson.readAddress(_json, "$.l2OutputOracleProposer");
         l2OutputOracleChallenger = stdJson.readAddress(_json, "$.l2OutputOracleChallenger");
-        finalizationPeriodSeconds = stdJson.readUint(_json, "$.finalizationPeriodSeconds");
         fundDevAccounts = _readOr(_json, "$.fundDevAccounts", false);
         proxyAdminOwner = stdJson.readAddress(_json, "$.proxyAdminOwner");
         baseFeeVaultRecipient = stdJson.readAddress(_json, "$.baseFeeVaultRecipient");
@@ -134,21 +124,16 @@ contract DeployConfig is Script {
         sequencerFeeVaultRecipient = stdJson.readAddress(_json, "$.sequencerFeeVaultRecipient");
         sequencerFeeVaultMinimumWithdrawalAmount = stdJson.readUint(_json, "$.sequencerFeeVaultMinimumWithdrawalAmount");
         sequencerFeeVaultWithdrawalNetwork = stdJson.readUint(_json, "$.sequencerFeeVaultWithdrawalNetwork");
-        governanceTokenName = stdJson.readString(_json, "$.governanceTokenName");
-        governanceTokenSymbol = stdJson.readString(_json, "$.governanceTokenSymbol");
         governanceTokenOwner = stdJson.readAddress(_json, "$.governanceTokenOwner");
         l2GenesisBlockGasLimit = stdJson.readUint(_json, "$.l2GenesisBlockGasLimit");
         basefeeScalar = uint32(_readOr(_json, "$.gasPriceOracleBaseFeeScalar", 1368));
         blobbasefeeScalar = uint32(_readOr(_json, "$.gasPriceOracleBlobBaseFeeScalar", 810949));
 
-        enableGovernance = stdJson.readBool(_json, "$.enableGovernance");
-        eip1559Denominator = stdJson.readUint(_json, "$.eip1559Denominator");
-        eip1559Elasticity = stdJson.readUint(_json, "$.eip1559Elasticity");
+        enableGovernance = _readOr(_json, "$.enableGovernance", false);
         systemConfigStartBlock = stdJson.readUint(_json, "$.systemConfigStartBlock");
         requiredProtocolVersion = stdJson.readUint(_json, "$.requiredProtocolVersion");
         recommendedProtocolVersion = stdJson.readUint(_json, "$.recommendedProtocolVersion");
 
-        useFaultProofs = _readOr(_json, "$.useFaultProofs", false);
         proofMaturityDelaySeconds = _readOr(_json, "$.proofMaturityDelaySeconds", 0);
         disputeGameFinalityDelaySeconds = _readOr(_json, "$.disputeGameFinalityDelaySeconds", 0);
         respectedGameType = _readOr(_json, "$.respectedGameType", 0);
@@ -172,10 +157,13 @@ contract DeployConfig is Script {
         daBondSize = _readOr(_json, "$.daBondSize", 1000000000);
         daResolverRefundPercentage = _readOr(_json, "$.daResolverRefundPercentage", 0);
 
-        useCustomGasToken = _readOr(_json, "$.useCustomGasToken", false);
-        customGasTokenAddress = _readOr(_json, "$.customGasTokenAddress", address(0));
-
         useInterop = _readOr(_json, "$.useInterop", false);
+        devFeatureBitmap = bytes32(_readOr(_json, "$.devFeatureBitmap", 0));
+        useUpgradedFork;
+        faultGameV2MaxGameDepth = _readOr(_json, "$.faultGameV2MaxGameDepth", 73);
+        faultGameV2SplitDepth = _readOr(_json, "$.faultGameV2SplitDepth", 30);
+        faultGameV2ClockExtension = _readOr(_json, "$.faultGameV2ClockExtension", 10800);
+        faultGameV2MaxClockDuration = _readOr(_json, "$.faultGameV2MaxClockDuration", 302400);
     }
 
     function fork() public view returns (Fork fork_) {
@@ -191,29 +179,28 @@ contract DeployConfig is Script {
     }
 
     function l1StartingBlockTag() public returns (bytes32) {
-        try vm.parseJsonBytes32(_json, "$.l1StartingBlockTag") returns (bytes32 tag) {
-            return tag;
+        try vm.parseJsonBytes32(_json, "$.l1StartingBlockTag") returns (bytes32 tag_) {
+            return tag_;
         } catch {
-            try vm.parseJsonString(_json, "$.l1StartingBlockTag") returns (string memory tag) {
-                return _getBlockByTag(tag);
+            try vm.parseJsonString(_json, "$.l1StartingBlockTag") returns (string memory tag_) {
+                return _getBlockByTag(tag_);
             } catch {
-                try vm.parseJsonUint(_json, "$.l1StartingBlockTag") returns (uint256 tag) {
-                    return _getBlockByTag(vm.toString(tag));
+                try vm.parseJsonUint(_json, "$.l1StartingBlockTag") returns (uint256 tag_) {
+                    return _getBlockByTag(vm.toString(tag_));
                 } catch { }
             }
         }
-        revert("l1StartingBlockTag must be a bytes32, string or uint256 or cannot fetch l1StartingBlockTag");
+        revert(
+            "DeployConfig: l1StartingBlockTag must be a bytes32, string or uint256 or cannot fetch l1StartingBlockTag"
+        );
     }
 
     function l2OutputOracleStartingTimestamp() public returns (uint256) {
         if (_l2OutputOracleStartingTimestamp < 0) {
             bytes32 tag = l1StartingBlockTag();
-            string[] memory cmd = new string[](3);
-            cmd[0] = Executables.bash;
-            cmd[1] = "-c";
-            cmd[2] = string.concat("cast block ", vm.toString(tag), " --json | ", Executables.jq, " .timestamp");
-            bytes memory res = Process.run(cmd);
-            return stdJson.readUint(string(res), "");
+            string memory cmd = string.concat("cast block ", vm.toString(tag), " --json | jq .timestamp");
+            string memory res = Process.bash(cmd);
+            return stdJson.readUint(res, "");
         }
         return uint256(_l2OutputOracleStartingTimestamp);
     }
@@ -221,11 +208,6 @@ contract DeployConfig is Script {
     /// @notice Allow the `useAltDA` config to be overridden in testing environments
     function setUseAltDA(bool _useAltDA) public {
         useAltDA = _useAltDA;
-    }
-
-    /// @notice Allow the `useFaultProofs` config to be overridden in testing environments
-    function setUseFaultProofs(bool _useFaultProofs) public {
-        useFaultProofs = _useFaultProofs;
     }
 
     /// @notice Allow the `useInterop` config to be overridden in testing environments
@@ -238,14 +220,28 @@ contract DeployConfig is Script {
         fundDevAccounts = _fundDevAccounts;
     }
 
-    /// @notice Allow the `useCustomGasToken` config to be overridden in testing environments
-    function setUseCustomGasToken(address _token) public {
-        useCustomGasToken = true;
-        customGasTokenAddress = _token;
+    /// @notice Allow the `devFeatureBitmap` config to be overridden in testing environments
+    function setDevFeatureBitmap(bytes32 _devFeatureBitmap) public {
+        devFeatureBitmap = _devFeatureBitmap;
+    }
+
+    /// @notice Allow the `useUpgradedFork` config to be overridden in testing environments
+    /// @dev When true, the forked system WILL be upgraded in setUp().
+    ///      When false, the forked system WILL NOT be upgraded in setUp().
+    ///      This function does nothing when not testing in a forked environment.
+    ///      Generally the only time you should call this function is if you want to
+    ///      call opcm.upgrade() in the test itself, rather than have the upgraded
+    ///      system be deployed in setUp().
+    function setUseUpgradedFork(bool _useUpgradedFork) public {
+        useUpgradedFork = _useUpgradedFork;
     }
 
     function latestGenesisFork() internal view returns (Fork) {
-        if (l2GenesisGraniteTimeOffset == 0) {
+        if (l2GenesisJovianTimeOffset == 0) {
+            return Fork.JOVIAN;
+        } else if (l2GenesisHoloceneTimeOffset == 0) {
+            return Fork.HOLOCENE;
+        } else if (l2GenesisGraniteTimeOffset == 0) {
             return Fork.GRANITE;
         } else if (l2GenesisFjordTimeOffset == 0) {
             return Fork.FJORD;
@@ -258,40 +254,53 @@ contract DeployConfig is Script {
     }
 
     function _getBlockByTag(string memory _tag) internal returns (bytes32) {
-        string[] memory cmd = new string[](3);
-        cmd[0] = Executables.bash;
-        cmd[1] = "-c";
-        cmd[2] = string.concat("cast block ", _tag, " --json | ", Executables.jq, " -r .hash");
-        bytes memory res = Process.run(cmd);
+        string memory cmd = string.concat("cast block ", _tag, " --json | jq -r .hash");
+        bytes memory res = bytes(Process.bash(cmd));
         return abi.decode(res, (bytes32));
     }
 
-    function _readOr(string memory json, string memory key, bool defaultValue) internal view returns (bool) {
-        return vm.keyExistsJson(json, key) ? json.readBool(key) : defaultValue;
+    function _readOr(string memory _jsonInp, string memory _key, bool _defaultValue) internal view returns (bool) {
+        return _jsonInp.readBoolOr(_key, _defaultValue);
     }
 
-    function _readOr(string memory json, string memory key, uint256 defaultValue) internal view returns (uint256) {
-        return (vm.keyExistsJson(json, key) && !_isNull(json, key)) ? json.readUint(key) : defaultValue;
+    function _readOr(
+        string memory _jsonInp,
+        string memory _key,
+        uint256 _defaultValue
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        return (vm.keyExistsJson(_jsonInp, _key) && !_isNull(_json, _key)) ? _jsonInp.readUint(_key) : _defaultValue;
     }
 
-    function _readOr(string memory json, string memory key, address defaultValue) internal view returns (address) {
-        return vm.keyExistsJson(json, key) ? json.readAddress(key) : defaultValue;
+    function _readOr(
+        string memory _jsonInp,
+        string memory _key,
+        address _defaultValue
+    )
+        internal
+        view
+        returns (address)
+    {
+        return _jsonInp.readAddressOr(_key, _defaultValue);
     }
 
-    function _isNull(string memory json, string memory key) internal pure returns (bool) {
-        string memory value = json.readString(key);
+    function _isNull(string memory _jsonInp, string memory _key) internal pure returns (bool) {
+        string memory value = _jsonInp.readString(_key);
         return (keccak256(bytes(value)) == keccak256(bytes("null")));
     }
 
     function _readOr(
-        string memory json,
-        string memory key,
-        string memory defaultValue
+        string memory _jsonInp,
+        string memory _key,
+        string memory _defaultValue
     )
         internal
         view
         returns (string memory)
     {
-        return vm.keyExists(json, key) ? json.readString(key) : defaultValue;
+        return _jsonInp.readStringOr(_key, _defaultValue);
     }
 }

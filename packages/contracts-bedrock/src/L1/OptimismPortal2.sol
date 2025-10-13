@@ -27,7 +27,10 @@ import { IDisputeGame } from "interfaces/dispute/IDisputeGame.sol";
 import { IAnchorStateRegistry } from "interfaces/dispute/IAnchorStateRegistry.sol";
 import { IETHLockbox } from "interfaces/L1/IETHLockbox.sol";
 import { ISuperchainConfig } from "interfaces/L1/ISuperchainConfig.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { L1Block } from "src/L2/L1Block.sol";
+import { Predeploys } from "src/libraries/Predeploys.sol";
 
 /// @custom:proxied true
 /// @title OptimismPortal2
@@ -35,6 +38,9 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 ///         and L2. Messages sent directly to the OptimismPortal have no form of replayability.
 ///         Users are encouraged to use the L1CrossDomainMessenger for a higher-level interface.
 contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase, ProxyAdminOwnedBase, ISemver {
+    /// @notice Allows for interactions with non standard ERC20 tokens.
+    using SafeERC20 for IERC20;
+
     /// @notice Represents a proven withdrawal.
     /// @custom:field disputeGameProxy Game that the withdrawal was proven against.
     /// @custom:field timestamp        Timestamp at which the withdrawal was proven.
@@ -51,6 +57,9 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
 
     /// @notice The L2 gas limit set when eth is deposited using the receive() function.
     uint64 internal constant RECEIVE_DEFAULT_GAS_LIMIT = 100_000;
+
+    /// @notice The L2 gas limit for system deposit transactions that are initiated from L1.
+    uint32 internal constant SYSTEM_DEPOSIT_GAS_LIMIT = 80_000;
 
     /// @notice Address of the L2 account which initiated a withdrawal in this transaction.
     ///         If the value of this variable is the default L2 sender address, then we are NOT
@@ -207,6 +216,18 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
 
     /// @notice Thrown when ETHLockbox is set/unset incorrectly depending on the feature flag.
     error OptimismPortal_InvalidLockboxState();
+
+    /// @notice Thrown when a transfer via call fails.
+    error OptimismPortal_TransferFailed();
+
+    /// @notice Thrown when a method is called that only works when using a custom gas token.
+    error OptimismPortal_OnlyCustomGasToken();
+
+    /// @notice Thrown when a method cannot be called with non zero CALLVALUE.
+    error OptimismPortal_NoValue();
+
+    /// @notice Thrown when a method is called by an unauthorized caller.
+    error OptimismPortal_Unauthorized();
 
     /// @notice Semantic version.
     /// @custom:semver 5.1.1
@@ -519,7 +540,7 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
 
                 // The balance must be transferred exactly.
                 if (IERC20(token).balanceOf(address(this)) != startBalance - _tx.value) {
-                    revert TransferFailed();
+                    revert OptimismPortal_TransferFailed();
                 }
             }
 
@@ -593,6 +614,42 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
         }
     }
 
+    function depositERC20Transaction(
+        address _to,
+        uint256 _mint,
+        uint256 _value,
+        uint64 _gasLimit,
+        bool _isCreation,
+        bytes memory _data
+    ) public metered(_gasLimit) {
+        // Can only be called if an ERC20 token is used for gas paying on L2
+        (address token,) = gasPayingToken();
+        if (token == Constants.ETHER) revert OptimismPortal_OnlyCustomGasToken();
+
+        // Gives overflow protection for L2 account balances.
+        _balance += _mint;
+
+        // Get the balance of the portal before the transfer.
+        uint256 startBalance = IERC20(token).balanceOf(address(this));
+
+        // Take ownership of the token. It is assumed that the user has given the portal an approval.
+        IERC20(token).safeTransferFrom({ from: msg.sender, to: address(this), value: _mint });
+
+        // Double check that the portal now has the exact amount of token.
+        if (IERC20(token).balanceOf(address(this)) != startBalance + _mint) {
+            revert OptimismPortal_TransferFailed();
+        }
+
+        _depositTransaction({
+            _to: _to,
+            _mint: _mint,
+            _value: _value,
+            _gasLimit: _gasLimit,
+            _isCreation: _isCreation,
+            _data: _data
+        });
+    }
+
     /// @notice Accepts deposits of ETH and data, and emits a TransactionDeposited event for use in
     ///         deriving deposit transactions. Note that if a deposit is made by a contract, its
     ///         address will be aliased when retrieved using `tx.origin` or `msg.sender`. Consider
@@ -615,6 +672,27 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
         payable
         metered(_gasLimit)
     {
+        (address token,) = gasPayingToken();
+        if (token != Constants.ETHER && msg.value != 0) revert OptimismPortal_NoValue();
+
+        _depositTransaction({
+            _to: _to,
+            _mint: msg.value,
+            _value: _value,
+            _gasLimit: _gasLimit,
+            _isCreation: _isCreation,
+            _data: _data
+        });
+    }
+
+    function _depositTransaction(
+        address _to,
+        uint256 _mint,
+        uint256 _value,
+        uint64 _gasLimit,
+        bool _isCreation,
+        bytes memory _data
+    ) internal {
         // If using ETHLockbox, lock the ETH in the ETHLockbox.
         if (_isUsingLockbox()) {
             if (msg.value > 0) ethLockbox.lockETH{ value: msg.value }();
@@ -649,11 +727,36 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
         // Compute the opaque data that will be emitted as part of the TransactionDeposited event.
         // We use opaque data so that we can update the TransactionDeposited event in the future
         // without breaking the current interface.
-        bytes memory opaqueData = abi.encodePacked(msg.value, _value, _gasLimit, _isCreation, _data);
+        bytes memory opaqueData = abi.encodePacked(_mint, _value, _gasLimit, _isCreation, _data);
 
         // Emit a TransactionDeposited event so that the rollup node can derive a deposit
         // transaction for this deposit.
         emit TransactionDeposited(from, _to, DEPOSIT_VERSION, opaqueData);
+    }
+
+    /// @notice Sets the gas paying token for the L2 system. This token is used as the
+    ///         L2 native asset. Only the SystemConfig contract can call this function.
+    function setGasPayingToken(address _token, uint8 _decimals, bytes32 _name, bytes32 _symbol) external {
+        if (msg.sender != address(systemConfig)) revert OptimismPortal_Unauthorized();
+
+        // Set L2 deposit gas as used without paying burning gas. Ensures that deposits cannot use too much L2 gas.
+        // This value must be large enough to cover the cost of calling `L1Block.setGasPayingToken`.
+        useGas(SYSTEM_DEPOSIT_GAS_LIMIT);
+
+        // Emit the special deposit transaction directly that sets the gas paying
+        // token in the L1Block predeploy contract.
+        emit TransactionDeposited(
+            Constants.DEPOSITOR_ACCOUNT,
+            Predeploys.L1_BLOCK_ATTRIBUTES,
+            DEPOSIT_VERSION,
+            abi.encodePacked(
+                uint256(0), // mint
+                uint256(0), // value
+                uint64(SYSTEM_DEPOSIT_GAS_LIMIT), // gasLimit
+                false, // isCreation,
+                abi.encodeCall(L1Block.setGasPayingToken, (_token, _decimals, _name, _symbol))
+            )
+        );
     }
 
     /// @notice External getter for the number of proof submitters for a withdrawal hash.

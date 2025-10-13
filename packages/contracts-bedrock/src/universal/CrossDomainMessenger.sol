@@ -395,6 +395,15 @@ abstract contract CrossDomainMessenger is
             );
     }
 
+    /// @notice Returns the address of the gas token and the token's decimals.
+    function gasPayingToken() internal view virtual returns (address, uint8);
+
+    /// @notice Returns whether the chain uses a custom gas token or not.
+    function isCustomGasToken() internal view returns (bool) {
+        (address token,) = gasPayingToken();
+        return token != Constants.ETHER;
+    }
+
     /// @notice Initializer.
     /// @param _otherMessenger CrossDomainMessenger contract on the other chain.
     function __CrossDomainMessenger_init(CrossDomainMessenger _otherMessenger) internal onlyInitializing {

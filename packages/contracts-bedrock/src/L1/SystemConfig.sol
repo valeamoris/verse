@@ -15,13 +15,17 @@ import { ISemver } from "interfaces/universal/ISemver.sol";
 import { IResourceMetering } from "interfaces/L1/IResourceMetering.sol";
 import { IOptimismPortal2 } from "interfaces/L1/IOptimismPortal2.sol";
 import { ISuperchainConfig } from "interfaces/L1/ISuperchainConfig.sol";
+import { GasPayingToken, IGasToken } from "src/libraries/GasPayingToken.sol";
+import { Constants } from "src/libraries/Constants.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { OptimismPortal2 } from "src/L1/OptimismPortal2.sol";
 
 /// @custom:proxied true
 /// @title SystemConfig
 /// @notice The SystemConfig contract is used to manage configuration of an Optimism network.
 ///         All configuration is stored on L1 and picked up by L2 as part of the derviation of
 ///         the L2 chain.
-contract SystemConfig is ProxyAdminOwnedBase, OwnableUpgradeable, ReinitializableBase, ISemver {
+contract SystemConfig is ProxyAdminOwnedBase, OwnableUpgradeable, ReinitializableBase, ISemver, IGasToken {
     /// @notice Enum representing different types of updates.
     /// @custom:value BATCHER              Represents an update to the batcher hash.
     /// @custom:value FEE_SCALARS          Represents an update to l1 data fee scalars.
@@ -50,6 +54,7 @@ contract SystemConfig is ProxyAdminOwnedBase, OwnableUpgradeable, Reinitializabl
         address l1StandardBridge;
         address optimismPortal;
         address optimismMintableERC20Factory;
+        address gasPayingToken;
     }
 
     /// @notice Version identifier, used for upgrades.
@@ -81,6 +86,9 @@ contract SystemConfig is ProxyAdminOwnedBase, OwnableUpgradeable, Reinitializabl
     /// @notice Storage slot that the OptimismMintableERC20Factory address is stored at.
     bytes32 public constant OPTIMISM_MINTABLE_ERC20_FACTORY_SLOT =
         bytes32(uint256(keccak256("systemconfig.optimismmintableerc20factory")) - 1);
+
+    /// @notice The number of decimals that the gas paying token has.
+    uint8 internal constant GAS_PAYING_TOKEN_DECIMALS = 18;
 
     /// @notice Storage slot that the batch inbox address is stored at.
     bytes32 public constant BATCH_INBOX_SLOT = bytes32(uint256(keccak256("systemconfig.batchinbox")) - 1);
@@ -225,6 +233,7 @@ contract SystemConfig is ProxyAdminOwnedBase, OwnableUpgradeable, Reinitializabl
         Storage.setAddress(OPTIMISM_MINTABLE_ERC20_FACTORY_SLOT, _addresses.optimismMintableERC20Factory);
 
         _setStartBlock();
+        _setGasPayingToken(_addresses.gasPayingToken);
 
         _setResourceConfig(_config);
 
@@ -291,12 +300,14 @@ contract SystemConfig is ProxyAdminOwnedBase, OwnableUpgradeable, Reinitializabl
 
     /// @notice Consolidated getter for the Addresses struct.
     function getAddresses() external view returns (Addresses memory) {
+        (address _addr,) = gasPayingToken();
         return Addresses({
             l1CrossDomainMessenger: l1CrossDomainMessenger(),
             l1ERC721Bridge: l1ERC721Bridge(),
             l1StandardBridge: l1StandardBridge(),
             optimismPortal: optimismPortal(),
-            optimismMintableERC20Factory: optimismMintableERC20Factory()
+            optimismMintableERC20Factory: optimismMintableERC20Factory(),
+            gasPayingToken: _addr
         });
     }
 
@@ -309,6 +320,53 @@ contract SystemConfig is ProxyAdminOwnedBase, OwnableUpgradeable, Reinitializabl
     function startBlock() external view returns (uint256 startBlock_) {
         startBlock_ = Storage.getUint(START_BLOCK_SLOT);
     }
+
+    /// @notice Getter for the gas paying asset address.
+    function gasPayingToken() public view returns (address addr_, uint8 decimals_) {
+        (addr_, decimals_) = GasPayingToken.getToken();
+    }
+
+     /// @notice Getter for custom gas token paying networks. Returns true if the
+    ///         network uses a custom gas token.
+    function isCustomGasToken() public view returns (bool) {
+        (address token,) = gasPayingToken();
+        return token != Constants.ETHER;
+    }
+
+    /// @notice Getter for the gas paying token name.
+    function gasPayingTokenName() external view returns (string memory name_) {
+        name_ = GasPayingToken.getName();
+    }
+
+    /// @notice Getter for the gas paying token symbol.
+    function gasPayingTokenSymbol() external view returns (string memory symbol_) {
+        symbol_ = GasPayingToken.getSymbol();
+    }
+
+    /// @notice Internal setter for the gas paying token address, includes validation.
+    ///         The token must not already be set and must be non zero and not the ether address
+    ///         to set the token address. This prevents the token address from being changed
+    ///         and makes it explicitly opt-in to use custom gas token.
+    /// @param _token Address of the gas paying token.
+    function _setGasPayingToken(address _token) internal {
+        if (_token != address(0) && _token != Constants.ETHER && !isCustomGasToken()) {
+            require(
+                ERC20(_token).decimals() == GAS_PAYING_TOKEN_DECIMALS, "SystemConfig: bad decimals of gas paying token"
+                );
+            bytes32 name = GasPayingToken.sanitize(ERC20(_token).name());
+            bytes32 symbol = GasPayingToken.sanitize(ERC20(_token).symbol());
+
+            // Set the gas paying token in storage and in the OptimismPortal.
+            GasPayingToken.set({ _token: _token, _decimals: GAS_PAYING_TOKEN_DECIMALS, _name: name, _symbol: symbol });
+            OptimismPortal2(payable(optimismPortal())).setGasPayingToken({
+                 _token: _token,
+                _decimals: GAS_PAYING_TOKEN_DECIMALS,
+                _name: name,
+                _symbol: symbol
+            });
+        }
+    }
+
 
     /// @notice Updates the unsafe block signer address. Can only be called by the owner.
     /// @param _unsafeBlockSigner New unsafe block signer address.

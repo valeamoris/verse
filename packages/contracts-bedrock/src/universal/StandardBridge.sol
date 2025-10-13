@@ -15,6 +15,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IOptimismMintableERC20 } from "interfaces/universal/IOptimismMintableERC20.sol";
 import { ILegacyMintableERC20 } from "interfaces/legacy/ILegacyMintableERC20.sol";
 import { ICrossDomainMessenger } from "interfaces/universal/ICrossDomainMessenger.sol";
+import { Constants } from "src/libraries/Constants.sol";
 
 /// @custom:upgradeable
 /// @title StandardBridge
@@ -134,6 +135,9 @@ abstract contract StandardBridge is Initializable {
     ///         Must be implemented by contracts that inherit.
     receive() external payable virtual;
 
+    /// @notice Returns the address of the custom gas token and the token's decimals.
+    function gasPayingToken() internal view virtual returns (address, uint8);
+
     /// @notice Getter for messenger contract.
     ///         Public getter is legacy and will be removed in the future. Use `messenger` instead.
     /// @return Contract of the messenger on this domain.
@@ -141,6 +145,13 @@ abstract contract StandardBridge is Initializable {
     function MESSENGER() external view returns (ICrossDomainMessenger) {
         return messenger;
     }
+
+    /// @notice Returns whether the chain uses a custom gas token or not.
+    function isCustomGasToken() internal view returns (bool) {
+        (address token,) = gasPayingToken();
+        return token != Constants.ETHER;
+    }
+
 
     /// @notice Getter for the other bridge contract.
     ///         Public getter is legacy and will be removed in the future. Use `otherBridge` instead.

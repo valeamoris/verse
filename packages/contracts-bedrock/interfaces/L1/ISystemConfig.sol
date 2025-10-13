@@ -22,6 +22,7 @@ interface ISystemConfig is IProxyAdminOwnedBase {
         address l1StandardBridge;
         address optimismPortal;
         address optimismMintableERC20Factory;
+        address gasPayingToken;
     }
 
     error ReinitializableBase_ZeroInitVersion();

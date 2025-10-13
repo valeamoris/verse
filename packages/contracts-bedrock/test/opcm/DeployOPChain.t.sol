@@ -119,7 +119,8 @@ contract DeployOPChain_TestBase is Test {
             disputeMaxClockDuration: disputeMaxClockDuration,
             allowCustomDisputeParameters: false,
             operatorFeeScalar: 0,
-            operatorFeeConstant: 0
+            operatorFeeConstant: 0,
+            customGasToken: address(0)
         });
     }
 }

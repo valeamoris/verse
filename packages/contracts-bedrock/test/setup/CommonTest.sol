@@ -22,6 +22,8 @@ import { console } from "forge-std/console.sol";
 import { IOptimismMintableERC20Full } from "interfaces/universal/IOptimismMintableERC20Full.sol";
 import { ILegacyMintableERC20Full } from "interfaces/legacy/ILegacyMintableERC20Full.sol";
 
+import { Constants } from "src/libraries/Constants.sol";
+
 /// @title CommonTest
 /// @dev An extension to `Test` that sets up the optimism smart contracts.
 contract CommonTest is Test, Setup, Events {
@@ -34,6 +36,7 @@ contract CommonTest is Test, Setup, Events {
 
     bool useAltDAOverride;
     bool useInteropOverride;
+    address customGasToken;
 
     /// @dev This value is only used in forked tests. During forked tests, the default is to perform the upgrade before
     ///      running the tests.
@@ -73,6 +76,9 @@ contract CommonTest is Test, Setup, Events {
         }
         if (useUpgradedFork) {
             deploy.cfg().setUseUpgradedFork(true);
+        }
+        if (customGasToken != address(0)) {
+            deploy.cfg().setUseCustomGasToken(customGasToken);
         }
 
         if (isForkTest()) {
@@ -207,5 +213,16 @@ contract CommonTest is Test, Setup, Events {
         _checkNotDeployed("non-upgraded fork");
 
         useUpgradedFork = false;
+    }
+
+    function enableCustomGasToken(address _token) public {
+        // Check if the system has already been deployed, based off of the heuristic that alice and bob have not been
+        // set by the `setUp` function yet.
+        if (!(alice == address(0) && bob == address(0))) {
+            revert("CommonTest: Cannot enable custom gas token after deployment. Consider overriding `setUp`.");
+        }
+        require(_token != Constants.ETHER);
+
+        customGasToken = _token;
     }
 }

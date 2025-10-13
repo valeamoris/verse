@@ -1200,7 +1200,7 @@ contract OPContractsManagerDeployer is OPContractsManagerBase {
     /// @notice Returns default, standard config arguments for the SystemConfig initializer.
     /// This is used by subclasses to reduce code duplication.
     function defaultSystemConfigParams(
-        OPContractsManager.DeployInput memory, /* _input */
+        OPContractsManager.DeployInput memory _input,
         OPContractsManager.DeployOutput memory _output
     )
         internal
@@ -1215,7 +1215,8 @@ contract OPContractsManagerDeployer is OPContractsManagerBase {
             l1ERC721Bridge: address(_output.l1ERC721BridgeProxy),
             l1StandardBridge: address(_output.l1StandardBridgeProxy),
             optimismPortal: address(_output.optimismPortalProxy),
-            optimismMintableERC20Factory: address(_output.optimismMintableERC20FactoryProxy)
+            optimismMintableERC20Factory: address(_output.optimismMintableERC20FactoryProxy),
+            gasPayingToken: address(_input.customGasToken)
         });
 
         assertValidContractAddress(opChainAddrs_.l1CrossDomainMessenger);
@@ -1739,6 +1740,7 @@ contract OPContractsManager is ISemver {
         uint256 disputeSplitDepth;
         Duration disputeClockExtension;
         Duration disputeMaxClockDuration;
+        address customGasToken;
     }
 
     /// @notice The full set of outputs from deploying a new OP Stack chain.

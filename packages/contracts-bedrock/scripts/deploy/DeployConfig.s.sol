@@ -76,6 +76,9 @@ contract DeployConfig is Script {
     uint256 public daBondSize;
     uint256 public daResolverRefundPercentage;
 
+    bool public useCustomGasToken;
+    address public customGasTokenAddress;
+
     // V2 Dispute Game Configuration
     uint256 public faultGameV2MaxGameDepth;
     uint256 public faultGameV2SplitDepth;
@@ -157,6 +160,9 @@ contract DeployConfig is Script {
         daBondSize = _readOr(_json, "$.daBondSize", 1000000000);
         daResolverRefundPercentage = _readOr(_json, "$.daResolverRefundPercentage", 0);
 
+        useCustomGasToken = _readOr(_json, "$.useCustomGasToken", false);
+        customGasTokenAddress = _readOr(_json, "$.customGasTokenAddress", address(0));
+
         useInterop = _readOr(_json, "$.useInterop", false);
         devFeatureBitmap = bytes32(_readOr(_json, "$.devFeatureBitmap", 0));
         useUpgradedFork;
@@ -234,6 +240,12 @@ contract DeployConfig is Script {
     ///      system be deployed in setUp().
     function setUseUpgradedFork(bool _useUpgradedFork) public {
         useUpgradedFork = _useUpgradedFork;
+    }
+
+    /// @notice Allow the `useCustomGasToken` config to be overridden in testing environments
+    function setUseCustomGasToken(address _token) public {
+        useCustomGasToken = true;
+        customGasTokenAddress = _token;
     }
 
     function latestGenesisFork() internal view returns (Fork) {

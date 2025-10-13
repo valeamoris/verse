@@ -157,6 +157,7 @@ interface IOPContractsManager {
         uint256 disputeSplitDepth;
         Duration disputeClockExtension;
         Duration disputeMaxClockDuration;
+        address customGasToken;
     }
 
     /// @notice The full set of outputs from deploying a new OP Stack chain.

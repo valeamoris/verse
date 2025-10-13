@@ -120,6 +120,11 @@ contract L1StandardBridge is StandardBridge, ProxyAdminOwnedBase, Reinitializabl
     }
 
     /// @inheritdoc StandardBridge
+    function gasPayingToken() internal view override returns (address _addr, uint8 _decimals) {
+        (_addr, _decimals) = systemConfig.gasPayingToken();
+    }
+
+    /// @inheritdoc StandardBridge
     function paused() public view override returns (bool) {
         return systemConfig.paused();
     }

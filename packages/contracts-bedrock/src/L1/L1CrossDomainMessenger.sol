@@ -61,6 +61,11 @@ contract L1CrossDomainMessenger is CrossDomainMessenger, ProxyAdminOwnedBase, Re
     }
 
     /// @inheritdoc CrossDomainMessenger
+    function gasPayingToken() internal view override returns (address _addr, uint8 _decimals) {
+        (_addr, _decimals) = systemConfig.gasPayingToken();
+    }
+
+    /// @inheritdoc CrossDomainMessenger
     function paused() public view override returns (bool) {
         return systemConfig.paused();
     }

@@ -27,6 +27,7 @@ import { IDisputeGame } from "interfaces/dispute/IDisputeGame.sol";
 import { IAnchorStateRegistry } from "interfaces/dispute/IAnchorStateRegistry.sol";
 import { IETHLockbox } from "interfaces/L1/IETHLockbox.sol";
 import { ISuperchainConfig } from "interfaces/L1/ISuperchainConfig.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @custom:proxied true
 /// @title OptimismPortal2
@@ -113,9 +114,12 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
     ///         proof submission should be used when finalizing a withdrawal.
     mapping(bytes32 => address[]) public proofSubmitters;
 
-    /// @custom:legacy
-    /// @custom:spacer _balance
-    uint256 private spacer_61_0_32;
+    /// @notice Represents the amount of native asset minted in L2. This may not
+    ///         be 100% accurate due to the ability to send ether to the contract
+    ///         without triggering a deposit transaction. It also is used to prevent
+    ///         overflows for L2 account balances when custom gas tokens are used.
+    ///         It is not safe to trust `ERC20.balanceOf` as it may lie.
+    uint256 private _balance;
 
     /// @notice Address of the AnchorStateRegistry contract.
     IAnchorStateRegistry public anchorStateRegistry;
@@ -244,6 +248,21 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
 
         // Initialize the ResourceMetering contract.
         __ResourceMetering_init();
+    }
+
+    /// @notice Getter for the balance of the contract.
+    function balance() public view returns (uint256) {
+        (address token,) = gasPayingToken();
+        if (token == Constants.ETHER) {
+            return address(this).balance;
+        } else {
+            return _balance;
+        }
+    }
+
+    /// @notice Returns the gas paying token and its decimals.
+    function gasPayingToken() public view returns (address addr_, uint8 decimals_) {
+        (addr_, decimals_) = systemConfig.gasPayingToken();
     }
 
     /// @notice Getter for the current paused status.
@@ -467,14 +486,50 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
         // Set the l2Sender so contracts know who triggered this withdrawal on L2.
         l2Sender = _tx.sender;
 
-        // Trigger the call to the target contract. We use a custom low level method
-        // SafeCall.callWithMinGas to ensure two key properties
-        //   1. Target contracts cannot force this call to run out of gas by returning a very large
-        //      amount of data (and this is OK because we don't care about the returndata here).
-        //   2. The amount of gas provided to the execution context of the target is at least the
-        //      gas limit specified by the user. If there is not enough gas in the current context
-        //      to accomplish this, `callWithMinGas` will revert.
-        bool success = SafeCall.callWithMinGas(_tx.target, _tx.gasLimit, _tx.value, _tx.data);
+        bool success;
+        (address token,) = gasPayingToken();
+        if (token == Constants.ETHER) {
+            // Trigger the call to the target contract. We use a custom low level method
+            // SafeCall.callWithMinGas to ensure two key properties
+            //   1. Target contracts cannot force this call to run out of gas by returning a very large
+            //      amount of data (and this is OK because we don't care about the returndata here).
+            //   2. The amount of gas provided to the execution context of the target is at least the
+            //      gas limit specified by the user. If there is not enough gas in the current context
+            //      to accomplish this, `callWithMinGas` will revert.
+            success = SafeCall.callWithMinGas(_tx.target, _tx.gasLimit, _tx.value, _tx.data);
+        } else {
+            // Cannot call the token contract directly from the portal. This would allow an attacker
+            // to call approve from a withdrawal and drain the balance of the portal.
+            if (_tx.target == token) revert OptimismPortal_BadTarget();
+
+            // Only transfer value when a non zero value is specified. This saves gas in the case of
+            // using the standard bridge or arbitrary message passing.
+            if (_tx.value != 0) {
+                // Update the contracts internal accounting of the amount of native asset in L2.
+                _balance -= _tx.value;
+
+                // Read the balance of the target contract before the transfer so the consistency
+                // of the transfer can be checked afterwards.
+                uint256 startBalance = IERC20(token).balanceOf(address(this));
+
+                // Transfer the ERC20 balance to the target, accounting for non standard ERC20
+                // implementations that may not return a boolean. This reverts if the low level
+                // call is not successful.
+                IERC20(token).safeTransfer({ to: _tx.target, value: _tx.value });
+
+                // The balance must be transferred exactly.
+                if (IERC20(token).balanceOf(address(this)) != startBalance - _tx.value) {
+                    revert TransferFailed();
+                }
+            }
+
+            // Make a call to the target contract only if there is calldata.
+            if (_tx.data.length != 0) {
+                success = SafeCall.callWithMinGas(_tx.target, _tx.gasLimit, 0, _tx.data);
+            } else {
+                success = true;
+            }
+        }
 
         // Reset the l2Sender back to the default value.
         l2Sender = Constants.DEFAULT_L2_SENDER;

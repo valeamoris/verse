@@ -43,6 +43,7 @@ type DeployOPChainInput struct {
 
 	OperatorFeeScalar   uint32
 	OperatorFeeConstant uint64
+	CustomGasToken      common.Address
 }
 
 type DeployOPChainOutput struct {

@@ -326,7 +326,7 @@ contract SystemConfig is ProxyAdminOwnedBase, OwnableUpgradeable, Reinitializabl
         (addr_, decimals_) = GasPayingToken.getToken();
     }
 
-     /// @notice Getter for custom gas token paying networks. Returns true if the
+    /// @notice Getter for custom gas token paying networks. Returns true if the
     ///         network uses a custom gas token.
     function isCustomGasToken() public view returns (bool) {
         (address token,) = gasPayingToken();
@@ -352,21 +352,36 @@ contract SystemConfig is ProxyAdminOwnedBase, OwnableUpgradeable, Reinitializabl
         if (_token != address(0) && _token != Constants.ETHER && !isCustomGasToken()) {
             require(
                 ERC20(_token).decimals() == GAS_PAYING_TOKEN_DECIMALS, "SystemConfig: bad decimals of gas paying token"
-                );
+            );
             bytes32 name = GasPayingToken.sanitize(ERC20(_token).name());
             bytes32 symbol = GasPayingToken.sanitize(ERC20(_token).symbol());
 
-            // Set the gas paying token in storage and in the OptimismPortal.
+            // Set the gas paying token in storage only.
+            // The OptimismPortal will be configured separately after initialization.
             GasPayingToken.set({ _token: _token, _decimals: GAS_PAYING_TOKEN_DECIMALS, _name: name, _symbol: symbol });
+        }
+    }
+
+    /// @notice Configures the gas paying token in the OptimismPortal after initialization.
+    ///         This function should only be called by the OpContractManager after the OptimismPortal
+    ///         has been initialized. It reads the gas paying token configuration from storage and
+    ///         applies it to the OptimismPortal.
+    function configureGasPayingTokenInPortal() external {
+        _assertOnlyProxyAdminOrProxyAdminOwner();
+
+        (address token, uint8 decimals) = gasPayingToken();
+        if (token != address(0) && token != Constants.ETHER) {
+            bytes32 name = GasPayingToken.sanitize(GasPayingToken.getName());
+            bytes32 symbol = GasPayingToken.sanitize(GasPayingToken.getSymbol());
+
             OptimismPortal2(payable(optimismPortal())).setGasPayingToken({
-                 _token: _token,
-                _decimals: GAS_PAYING_TOKEN_DECIMALS,
+                _token: token,
+                _decimals: decimals,
                 _name: name,
                 _symbol: symbol
             });
         }
     }
-
 
     /// @notice Updates the unsafe block signer address. Can only be called by the owner.
     /// @param _unsafeBlockSigner New unsafe block signer address.

@@ -621,7 +621,10 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
         uint64 _gasLimit,
         bool _isCreation,
         bytes memory _data
-    ) public metered(_gasLimit) {
+    )
+        public
+        metered(_gasLimit)
+    {
         // Can only be called if an ERC20 token is used for gas paying on L2
         (address token,) = gasPayingToken();
         if (token == Constants.ETHER) revert OptimismPortal_OnlyCustomGasToken();
@@ -692,7 +695,9 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ReinitializableBase
         uint64 _gasLimit,
         bool _isCreation,
         bytes memory _data
-    ) internal {
+    )
+        internal
+    {
         // If using ETHLockbox, lock the ETH in the ETHLockbox.
         if (_isUsingLockbox()) {
             if (msg.value > 0) ethLockbox.lockETH{ value: msg.value }();

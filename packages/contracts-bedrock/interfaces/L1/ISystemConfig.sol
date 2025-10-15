@@ -100,6 +100,7 @@ interface ISystemConfig is IProxyAdminOwnedBase {
     function setFeature(bytes32 _feature, bool _enabled) external;
     function isFeatureEnabled(bytes32) external view returns (bool);
     function gasPayingToken() external view returns (address addr_, uint8 decimals_);
+    function configureGasPayingTokenInPortal() external;
 
     function __constructor__() external;
 }

@@ -1129,6 +1129,10 @@ contract OPContractsManagerDeployer is OPContractsManagerBase {
             );
         }
 
+        // Configure the gas paying token in the OptimismPortal after initialization.
+        // This ensures that the OptimismPortal is properly initialized before setting the gas paying token.
+        output.systemConfigProxy.configureGasPayingTokenInPortal();
+
         // Initialize the ETHLockbox.
         IOptimismPortal[] memory portals = new IOptimismPortal[](1);
         portals[0] = output.optimismPortalProxy;

@@ -36,6 +36,7 @@ contract MintManager is Ownable {
     constructor(address _upgrader, address _governanceToken) {
         transferOwnership(_upgrader);
         governanceToken = IGovernanceToken(_governanceToken);
+        mintPermittedAfter = block.timestamp;
     }
 
     /// @notice Only the token owner is allowed to mint a certain amount of the

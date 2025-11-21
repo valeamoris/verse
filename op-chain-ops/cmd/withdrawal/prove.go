@@ -92,7 +92,14 @@ func ProveWithdrawal(ctx *cli.Context) error {
 		return fmt.Errorf("failed to get transaction receipt: %w", err)
 	}
 
-	portalAddr := common.HexToAddress(ctx.String(PortalAddressFlag.Name))
+	portalAddrStr := ctx.String(PortalAddressFlag.Name)
+	if portalAddrStr == "" {
+		return errors.New("must specify portal address")
+	}
+	portalAddr := common.HexToAddress(portalAddrStr)
+	if portalAddr == (common.Address{}) {
+		return errors.New("invalid or zero portal address")
+	}
 	portal, err := bindingspreview.NewOptimismPortal2(portalAddr, l1Client)
 	if err != nil {
 		return fmt.Errorf("failed to bind portal: %w", err)

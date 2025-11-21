@@ -46,7 +46,14 @@ func FinalizeWithdrawal(ctx *cli.Context) error {
 		return fmt.Errorf("failed to parse message: %w", err)
 	}
 
-	portalAddr := common.HexToAddress(ctx.String(PortalAddressFlag.Name))
+	portalAddrStr := ctx.String(PortalAddressFlag.Name)
+	if portalAddrStr == "" {
+		return errors.New("must specify portal address")
+	}
+	portalAddr := common.HexToAddress(portalAddrStr)
+	if portalAddr == (common.Address{}) {
+		return errors.New("invalid or zero portal address")
+	}
 	txData, err := w3.MustNewFunc("finalizeWithdrawalTransaction((uint256 Nonce, address Sender, address Target, uint256 Value, uint256 GasLimit, bytes Data))", "").EncodeArgs(
 		bindingspreview.TypesWithdrawalTransaction{
 			Nonce:    msgEvent.Nonce,

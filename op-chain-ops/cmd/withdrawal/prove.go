@@ -125,6 +125,27 @@ func ProveWithdrawal(ctx *cli.Context) error {
 	var txData []byte
 	if !usesSuperRoots {
 		logger.Info("Proving withdrawal using output root proof")
+
+		// Validate chain ID consistency between portal and L2 RPC
+		portalChainID, err := l2ChainIDForPortal(ctx.Context, l1EthClient, portal)
+		if err != nil {
+			return fmt.Errorf("failed to read portal chain ID: %w", err)
+		}
+
+		l2ChainID, err := l2Client.ChainID(ctx.Context)
+		if err != nil {
+			return fmt.Errorf("failed to read L2 RPC chain ID: %w", err)
+		}
+
+		if portalChainID != l2ChainID.Uint64() {
+			return fmt.Errorf(
+				"l2 chain ID mismatch: portal expects %d, but --l2 RPC reports %d. "+
+					"Use the correct L2 endpoint for this portal",
+				portalChainID, l2ChainID.Uint64(),
+			)
+		}
+
+		logger.Info("Validated L2 chain ID", "chainID", l2ChainID.Uint64())
 		txData, err = txDataForOutputRootProof(ctx.Context, proofClient, l2Client, txHash, factory, portal)
 		if err != nil {
 			return err

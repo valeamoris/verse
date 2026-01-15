@@ -60,6 +60,21 @@ jobs:
 
           echo "Building images with tags: ${IMAGE_TAGS}"
 
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Build contracts and copy artifacts
+        working-directory: op-deployer
+        run: |
+          echo "Building contracts..."
+          just build-contracts
+          echo "Copying contract artifacts..."
+          just copy-contract-artifacts
+          echo "Contract artifacts prepared successfully"
+
       - name: Build and push Docker images
         env:
           REGISTRY: ghcr.io

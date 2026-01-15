@@ -10,6 +10,7 @@ build-contracts:
 
 copy-contract-artifacts:
     rm -f ./pkg/deployer/artifacts/forge-artifacts/artifacts.tgz
+    mkdir -p ./pkg/deployer/artifacts/forge-artifacts
     tar -cvzf ./pkg/deployer/artifacts/forge-artifacts/artifacts.tgz -C ../packages/contracts-bedrock/forge-artifacts --exclude="*.t.sol" .
 
 _LDFLAGSSTRING := "'" + trim(

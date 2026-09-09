@@ -129,6 +129,14 @@ contract TimelockGuard is IGuard, ISemver {
     /// @custom:semver 1.0.0
     string public constant version = "1.0.0";
 
+    /// @notice ERC165 interface support.
+    /// @dev The Safe implementation on Verse Sepolia validates the guard contract in setGuard()
+    ///      by checking supportsInterface(type(IGuard).interfaceId). Without this function the
+    ///      guard cannot be enabled and setGuard() reverts (surfaced by the Safe UI as GS013).
+    function supportsInterface(bytes4 _interfaceId) external pure returns (bool) {
+        return _interfaceId == type(IGuard).interfaceId || _interfaceId == 0x01ffc9a7;
+    }
+
     /// @notice Error for when guard is not enabled for the Safe
     error TimelockGuard_GuardNotEnabled();
 

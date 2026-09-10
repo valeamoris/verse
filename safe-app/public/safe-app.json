@@ -1,0 +1,8 @@
+{
+  "name": "Verse Governance",
+  "description": "Safe multisig console for Verse ProxyAdmin and SystemConfig operations.",
+  "url": "/",
+  "iconPath": "icon.svg",
+  "chains": ["11155111"],
+  "tags": ["governance", "infrastructure"]
+}

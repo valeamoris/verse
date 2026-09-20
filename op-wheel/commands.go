@@ -586,6 +586,90 @@ var (
 		}),
 	}
 
+	EngineReplayCmd = &cli.Command{
+		Name:  "replay",
+		Usage: "Replay the whole L2 chain from a trusted plain eth RPC source (e.g. op-geth) into the destination engine.",
+		Description: "Executes every block of the source chain on the destination engine through the Engine API, " +
+			"without reading any L1 data. Use this to bootstrap an execution client (e.g. op-reth) on a chain " +
+			"whose historical L1 blob data is no longer retrievable. The source is trusted, the chain is not " +
+			"verified against L1 data availability. Resumes at the destination head + 1 unless --start is given.",
+		Flags: withEngineFlags(
+			&cli.StringFlag{
+				Name:     "source",
+				Usage:    "Unauthenticated eth JSON RPC of the trusted source node (e.g. op-geth), can be HTTP/WS/IPC.",
+				Required: true,
+				EnvVars:  prefixEnvVars("SOURCE"),
+			},
+			&cli.StringFlag{
+				Name: "chain-config",
+				Usage: "Path to the chain config, as a genesis file or a chain config JSON. " +
+					"Use this when the source does not serve debug_chainConfig (the default op-geth --http.api).",
+				TakesFile: true,
+				EnvVars:   prefixEnvVars("CHAIN_CONFIG"),
+			},
+			&cli.Uint64Flag{
+				Name:    "start",
+				Usage:   "First block number to replay. 0 (default) resumes at the destination head + 1.",
+				EnvVars: prefixEnvVars("START"),
+			},
+			&cli.Uint64Flag{
+				Name:    "end",
+				Usage:   "Last block number to replay. 0 (default) uses the source head.",
+				EnvVars: prefixEnvVars("END"),
+			},
+			&cli.Uint64Flag{
+				Name:    "fcu-interval",
+				Usage:   "Call forkchoiceUpdated every N blocks, so the destination persists progress. 0 disables.",
+				Value:   1000,
+				EnvVars: prefixEnvVars("FCU_INTERVAL"),
+			},
+			&cli.Uint64Flag{
+				Name:    "log-interval",
+				Usage:   "Log progress every N blocks.",
+				Value:   200,
+				EnvVars: prefixEnvVars("LOG_INTERVAL"),
+			},
+			&cli.Uint64Flag{
+				Name:    "safe-offset",
+				Usage:   "If non-zero, mark (head - offset) as safe and finalized, instead of mirroring the source node's labels.",
+				EnvVars: prefixEnvVars("SAFE_OFFSET"),
+			},
+		),
+		Action: func(ctx *cli.Context) error {
+			lgr := initLogger(ctx)
+			engineRPC, err := initEngineRPC(ctx, lgr)
+			if err != nil {
+				return fmt.Errorf("failed to dial Engine API endpoint %q: %w", ctx.String(EngineEndpoint.Name), err)
+			}
+			srcRPC, err := rpc.DialOptions(ctx.Context, ctx.String("source"))
+			if err != nil {
+				return fmt.Errorf("failed to dial source endpoint %q: %w", ctx.String("source"), err)
+			}
+			source := client.NewBaseRPCClient(srcRPC)
+			// The chain config decides which Engine API versions and payload fields are used for
+			// each block, so it must be the real config of the source chain.
+			var chainCfg params.ChainConfig
+			if path := ctx.String("chain-config"); path != "" {
+				loaded, err := engine.LoadChainConfig(path)
+				if err != nil {
+					return err
+				}
+				chainCfg = *loaded
+			} else if err := source.CallContext(ctx.Context, &chainCfg, "debug_chainConfig"); err != nil {
+				return fmt.Errorf("failed to read chain config from source: %w. "+
+					"Either enable the debug API on the source, or pass --chain-config with the genesis file", err)
+			}
+			dest := sources.NewEngineAPIClient(engineRPC, lgr, rollupFromGethConfig(&chainCfg))
+			return engine.Replay(ctx.Context, lgr, source, dest, &chainCfg, engine.ReplaySettings{
+				Start:       ctx.Uint64("start"),
+				End:         ctx.Uint64("end"),
+				FCUInterval: ctx.Uint64("fcu-interval"),
+				LogInterval: ctx.Uint64("log-interval"),
+				SafeOffset:  ctx.Uint64("safe-offset"),
+			})
+		},
+	}
+
 	EngineSetForkchoiceCmd = &cli.Command{
 		Name:        "set-forkchoice",
 		Description: "Set forkchoice, specify unsafe, safe and finalized blocks by number",
@@ -723,6 +807,7 @@ var EngineCmd = &cli.Command{
 		EngineStatusCmd,
 		EngineCopyCmd,
 		EngineCopyPayloadCmd,
+		EngineReplayCmd,
 		EngineSetForkchoiceCmd,
 		EngineSetForkchoiceHashCmd,
 		EngineRewindCmd,

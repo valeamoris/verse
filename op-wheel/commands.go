@@ -634,6 +634,14 @@ var (
 				Usage:   "If non-zero, mark (head - offset) as safe and finalized, instead of mirroring the source node's labels.",
 				EnvVars: prefixEnvVars("SAFE_OFFSET"),
 			},
+			&cli.Uint64Flag{
+				Name: "persist-lag",
+				Usage: "Keep safe/finalized this many blocks behind the head while replaying. Execution clients only " +
+					"persist executed blocks when the forkchoice advances, so without this the destination buffers " +
+					"the entire replay in memory. 0 disables.",
+				Value:   1000,
+				EnvVars: prefixEnvVars("PERSIST_LAG"),
+			},
 		),
 		Action: func(ctx *cli.Context) error {
 			lgr := initLogger(ctx)
@@ -666,6 +674,7 @@ var (
 				FCUInterval: ctx.Uint64("fcu-interval"),
 				LogInterval: ctx.Uint64("log-interval"),
 				SafeOffset:  ctx.Uint64("safe-offset"),
+				PersistLag:  ctx.Uint64("persist-lag"),
 			})
 		},
 	}

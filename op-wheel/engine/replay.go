@@ -60,6 +60,11 @@ type ReplaySettings struct {
 	// SafeOffset, when non-zero, marks (head - SafeOffset) as safe and finalized on the
 	// destination, instead of mirroring the source node's safe/finalized labels.
 	SafeOffset uint64
+	// PersistLag keeps the destination's safe/finalized labels this many blocks behind the
+	// replayed head. Execution clients persist executed blocks when the forkchoice advances,
+	// so a finalized label that never moves (or only mirrors a source that is far behind) makes
+	// the destination buffer the whole replay in memory. Zero disables it.
+	PersistLag uint64
 }
 
 // Replay executes every L2 block in the configured range on the destination engine, taking the
@@ -98,6 +103,11 @@ func Replay(ctx context.Context, lgr log.Logger, source client.RPC, dest *source
 	lgr.Info("Starting chain replay", "start", start, "end", end,
 		"dest_head", destHead.Number, "source_head", srcHead.Number, "genesis", genesis.Hash())
 
+	// Hashes of the blocks near the head, so a lagging label can be applied without an extra
+	// RPC call per forkchoice update. Only the last PersistLag+1 entries are kept.
+	recent := make(map[uint64]common.Hash)
+	var lastLabelNum uint64
+
 	var head *types.Block
 	if start > end {
 		lgr.Info("Nothing to replay: destination is already at or past the requested end")
@@ -118,12 +128,26 @@ func Replay(ctx context.Context, lgr log.Logger, source client.RPC, dest *source
 				return fmt.Errorf("failed to insert block %d (%s): %w", n, block.Hash(), err)
 			}
 			head = block
+			recent[n] = block.Hash()
+			if s.PersistLag > 0 && n > s.PersistLag+1 {
+				delete(recent, n-s.PersistLag-1)
+			}
 			done++
 			if s.FCUInterval > 0 && n%s.FCUInterval == 0 {
-				if err := updateForkchoice(ctx, dest, block.Hash(), genesis.Hash(), genesis.Hash()); err != nil {
+				// Advance the labels with the head, so the destination keeps persisting instead of
+				// holding every executed block in memory until the replay ends.
+				safe, finalized := genesis.Hash(), genesis.Hash()
+				if s.PersistLag > 0 && n > s.PersistLag {
+					if h, ok := recent[n-s.PersistLag]; ok {
+						safe, finalized = h, h
+						lastLabelNum = n - s.PersistLag
+					}
+				}
+				if err := updateForkchoice(ctx, dest, block.Hash(), safe, finalized); err != nil {
 					return fmt.Errorf("failed to update forkchoice at block %d: %w", n, err)
 				}
-				lgr.Info("Forkchoice updated", "head", n, "hash", block.Hash())
+				lgr.Info("Forkchoice updated", "head", n, "hash", block.Hash(),
+					"safe", lastLabelNum, "finalized", lastLabelNum)
 			}
 			if s.LogInterval > 0 && done%s.LogInterval == 0 {
 				elapsed := time.Since(started)
@@ -146,9 +170,24 @@ func Replay(ctx context.Context, lgr log.Logger, source client.RPC, dest *source
 	// Point forkchoice at the replayed chain. op-node derives from the L1 origin of these labels,
 	// so a label near the tip is what keeps the op-node from re-deriving (and re-fetching L1
 	// blobs for) the entire chain.
-	safeHash, safeNum, finalizedHash, err := resolveLabels(ctx, lgr, source, head, s.SafeOffset)
+	safeHash, safeNum, finalizedHash, finalizedNum, err := resolveLabels(ctx, lgr, source, head, s.SafeOffset)
 	if err != nil {
 		return err
+	}
+	// Never move the labels backwards: the replay, or an earlier run, may already have advanced
+	// them, and engines may reject a forkchoice that regresses the finalized block.
+	if cur, err := getHeader(ctx, dest.RPC, methodEthGetBlockByNumber, "safe"); err == nil && cur.Number.Uint64() > safeNum {
+		lgr.Info("Destination safe label is ahead of the source's, keeping it",
+			"destination_safe", cur.Number, "source_safe", safeNum)
+		safeHash, safeNum = cur.Hash(), cur.Number.Uint64()
+	}
+	if cur, err := getHeader(ctx, dest.RPC, methodEthGetBlockByNumber, "finalized"); err == nil && cur.Number.Uint64() > finalizedNum {
+		lgr.Info("Destination finalized label is ahead of the source's, keeping it",
+			"destination_finalized", cur.Number, "source_finalized", finalizedNum)
+		finalizedHash, finalizedNum = cur.Hash(), cur.Number.Uint64()
+	}
+	if finalizedNum > safeNum {
+		finalizedHash = safeHash
 	}
 	if err := updateForkchoice(ctx, dest, head.Hash(), safeHash, finalizedHash); err != nil {
 		return fmt.Errorf("failed to set final forkchoice: %w", err)
@@ -166,7 +205,7 @@ func Replay(ctx context.Context, lgr log.Logger, source client.RPC, dest *source
 
 // resolveLabels picks the safe/finalized labels to apply to the destination, and reports the
 // block number of the chosen safe label.
-func resolveLabels(ctx context.Context, lgr log.Logger, source client.RPC, head *types.Block, safeOffset uint64) (common.Hash, uint64, common.Hash, error) {
+func resolveLabels(ctx context.Context, lgr log.Logger, source client.RPC, head *types.Block, safeOffset uint64) (common.Hash, uint64, common.Hash, uint64, error) {
 	headNum := head.NumberU64()
 	if safeOffset > 0 {
 		num := uint64(0)
@@ -175,17 +214,17 @@ func resolveLabels(ctx context.Context, lgr log.Logger, source client.RPC, head 
 		}
 		h, err := getHeader(ctx, source, methodEthGetBlockByNumber, hexutil.EncodeUint64(num))
 		if err != nil {
-			return common.Hash{}, 0, common.Hash{}, fmt.Errorf("failed to fetch block %d for the safe-offset labels: %w", num, err)
+			return common.Hash{}, 0, common.Hash{}, 0, fmt.Errorf("failed to fetch block %d for the safe-offset labels: %w", num, err)
 		}
-		return h.Hash(), num, h.Hash(), nil
+		return h.Hash(), num, h.Hash(), num, nil
 	}
 	srcSafe, err := getHeader(ctx, source, methodEthGetBlockByNumber, "safe")
 	if err != nil {
-		return common.Hash{}, 0, common.Hash{}, fmt.Errorf("failed to read the source safe head: %w", err)
+		return common.Hash{}, 0, common.Hash{}, 0, fmt.Errorf("failed to read the source safe head: %w", err)
 	}
 	srcFinalized, err := getHeader(ctx, source, methodEthGetBlockByNumber, "finalized")
 	if err != nil {
-		return common.Hash{}, 0, common.Hash{}, fmt.Errorf("failed to read the source finalized head: %w", err)
+		return common.Hash{}, 0, common.Hash{}, 0, fmt.Errorf("failed to read the source finalized head: %w", err)
 	}
 	if srcSafe.Number.Uint64() > headNum || srcFinalized.Number.Uint64() > headNum {
 		lgr.Warn("Source safe/finalized head is ahead of the replayed head, clamping to the replayed head",
@@ -197,7 +236,7 @@ func resolveLabels(ctx context.Context, lgr log.Logger, source client.RPC, head 
 	if srcFinalized.Number.Uint64() > srcSafe.Number.Uint64() {
 		srcFinalized = srcSafe
 	}
-	return srcSafe.Hash(), srcSafe.Number.Uint64(), srcFinalized.Hash(), nil
+	return srcSafe.Hash(), srcSafe.Number.Uint64(), srcFinalized.Hash(), srcFinalized.Number.Uint64(), nil
 }
 
 // insertPayload turns the block into an execution payload and executes it on the destination,

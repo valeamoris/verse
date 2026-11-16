@@ -107,6 +107,8 @@ contract Events {
 
     event Unpaused(address identifier);
 
+    event AddressBlacklisted(address indexed account, bool blacklisted);
+
     event BalanceChanged(address account, uint256 balance);
 
     event ETHMigrated(address indexed lockbox, uint256 ethBalance);

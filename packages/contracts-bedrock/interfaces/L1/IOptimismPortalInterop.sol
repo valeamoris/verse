@@ -19,6 +19,7 @@ interface IOptimismPortalInterop is IProxyAdminOwnedBase {
     error ReinitializableBase_ZeroInitVersion();
     error OptimismPortal_AlreadyFinalized();
     error OptimismPortal_BadTarget();
+    error OptimismPortal_Blacklisted();
     error OptimismPortal_CallPaused();
     error OptimismPortal_CalldataTooLarge();
     error OptimismPortal_GasEstimation();
@@ -43,6 +44,7 @@ interface IOptimismPortalInterop is IProxyAdminOwnedBase {
     error UnexpectedList();
     error UnexpectedString();
 
+    event AddressBlacklisted(address indexed account, bool blacklisted);
     event Initialized(uint8 version);
     event TransactionDeposited(address indexed from, address indexed to, uint256 indexed version, bytes opaqueData);
     event WithdrawalFinalized(bytes32 indexed withdrawalHash, bool success);
@@ -54,6 +56,7 @@ interface IOptimismPortalInterop is IProxyAdminOwnedBase {
     receive() external payable;
 
     function anchorStateRegistry() external view returns (IAnchorStateRegistry);
+    function blacklistAdmin() external view returns (address);
     function ethLockbox() external view returns (IETHLockbox);
     function checkWithdrawal(bytes32 _withdrawalHash, address _proofSubmitter) external view;
     function depositTransaction(
@@ -86,6 +89,7 @@ interface IOptimismPortalInterop is IProxyAdminOwnedBase {
     )
         external;
     function initVersion() external view returns (uint8);
+    function isBlacklisted(address) external view returns (bool);
     function l2Sender() external view returns (address);
     function minimumGasLimit(uint64 _byteCount) external pure returns (uint64);
     function numProofSubmitters(bytes32 _withdrawalHash) external view returns (uint256);
@@ -118,6 +122,7 @@ interface IOptimismPortalInterop is IProxyAdminOwnedBase {
         returns (IDisputeGame disputeGameProxy, uint64 timestamp);
     function respectedGameType() external view returns (GameType);
     function respectedGameTypeUpdatedAt() external view returns (uint64);
+    function setBlacklisted(address _account, bool _blacklisted) external;
     function superRootsActive() external view returns (bool);
     function systemConfig() external view returns (ISystemConfig);
     function upgrade(IAnchorStateRegistry _anchorStateRegistry, IETHLockbox _ethLockbox) external;

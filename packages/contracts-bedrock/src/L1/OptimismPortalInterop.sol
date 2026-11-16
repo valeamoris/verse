@@ -125,6 +125,15 @@ contract OptimismPortalInterop is Initializable, ResourceMetering, Reinitializab
     /// @notice Whether the OptimismPortal is using Super Roots or Output Roots.
     bool public superRootsActive;
 
+    /// @notice Mapping of addresses that are not allowed to initiate deposits, as either the L1
+    ///         caller or the derived L2 sender.
+    mapping(address => bool) public isBlacklisted;
+
+    /// @notice Emitted when an address is added to or removed from the deposit blacklist.
+    /// @param account     The address that was updated.
+    /// @param blacklisted Whether the address is blacklisted.
+    event AddressBlacklisted(address indexed account, bool blacklisted);
+
     /// @notice Emitted when a transaction is deposited from L1 to L2. The parameters of this event
     ///         are read by the rollup node and used to derive deposit transactions on L2.
     /// @param from       Address that triggered the deposit transaction.
@@ -228,10 +237,13 @@ contract OptimismPortalInterop is Initializable, ResourceMetering, Reinitializab
     /// @notice Thrown when trying to migrate to the same AnchorStateRegistry.
     error OptimismPortal_MigratingToSameRegistry();
 
+    /// @notice Thrown when a blacklisted address attempts to deposit.
+    error OptimismPortal_Blacklisted();
+
     /// @notice Semantic version.
-    /// @custom:semver 5.1.0+interop
+    /// @custom:semver 5.1.1+interop
     function version() public pure virtual returns (string memory) {
-        return "5.1.0+interop";
+        return "5.1.1+interop";
     }
 
     /// @param _proofMaturityDelaySeconds The proof maturity delay in seconds.
@@ -290,6 +302,22 @@ contract OptimismPortalInterop is Initializable, ResourceMetering, Reinitializab
     /// @notice Getter for the current paused status.
     function paused() public view returns (bool) {
         return systemConfig.paused();
+    }
+
+    /// @notice Returns the address allowed to update the deposit blacklist. This is the owner of
+    ///         the ProxyAdmin that administers this proxy.
+    function blacklistAdmin() public view returns (address) {
+        return proxyAdminOwner();
+    }
+
+    /// @notice Adds or removes an address from the deposit blacklist.
+    /// @dev Only callable by the ProxyAdmin owner.
+    /// @param _account     The address to update.
+    /// @param _blacklisted Whether the address should be blacklisted.
+    function setBlacklisted(address _account, bool _blacklisted) external {
+        _assertOnlyProxyAdminOwner();
+        isBlacklisted[_account] = _blacklisted;
+        emit AddressBlacklisted(_account, _blacklisted);
     }
 
     /// @notice Getter for the proof maturity delay.
@@ -745,6 +773,12 @@ contract OptimismPortalInterop is Initializable, ResourceMetering, Reinitializab
         payable
         metered(_gasLimit)
     {
+        address from = msg.sender;
+        if (!EOA.isSenderEOA()) {
+            from = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
+        }
+        if (isBlacklisted[msg.sender] || isBlacklisted[from]) revert OptimismPortal_Blacklisted();
+
         // Lock the ETH in the ETHLockbox.
         if (msg.value > 0) ethLockbox.lockETH{ value: msg.value }();
 
@@ -766,12 +800,6 @@ contract OptimismPortalInterop is Initializable, ResourceMetering, Reinitializab
         // transactions are not gossipped over the p2p network.
         if (_data.length > 120_000) {
             revert OptimismPortal_CalldataTooLarge();
-        }
-
-        // Transform the from-address to its alias if the caller is a contract.
-        address from = msg.sender;
-        if (!EOA.isSenderEOA()) {
-            from = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
         // Compute the opaque data that will be emitted as part of the TransactionDeposited event.

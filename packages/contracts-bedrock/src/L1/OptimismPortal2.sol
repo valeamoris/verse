@@ -122,6 +122,10 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ISemver {
     ///         It is not safe to trust `ERC20.balanceOf` as it may lie.
     uint256 internal _balance;
 
+    /// @notice Mapping of addresses that are not allowed to initiate deposits, as either the L1
+    ///         caller or the derived L2 sender.
+    mapping(address => bool) public isBlacklisted;
+
     /// @notice Emitted when a transaction is deposited from L1 to L2.
     ///         The parameters of this event are read by the rollup node and used to derive deposit
     ///         transactions on L2.
@@ -157,6 +161,14 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ISemver {
     /// @param updatedAt   The timestamp at which the respected game type was updated.
     event RespectedGameTypeSet(GameType indexed newGameType, Timestamp indexed updatedAt);
 
+    /// @notice Emitted when an address is added to or removed from the deposit blacklist.
+    /// @param account     The address that was updated.
+    /// @param blacklisted Whether the address is blacklisted.
+    event AddressBlacklisted(address indexed account, bool blacklisted);
+
+    /// @notice Thrown when a blacklisted address attempts to deposit.
+    error OptimismPortal_Blacklisted();
+
     /// @notice Reverts when paused.
     modifier whenNotPaused() {
         if (paused()) revert CallPaused();
@@ -164,9 +176,9 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ISemver {
     }
 
     /// @notice Semantic version.
-    /// @custom:semver 3.11.0-beta.4
+    /// @custom:semver 3.11.0-beta.5
     function version() public pure virtual returns (string memory) {
-        return "3.11.0-beta.4";
+        return "3.11.0-beta.5";
     }
 
     /// @notice Constructs the OptimismPortal contract.
@@ -236,6 +248,31 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ISemver {
     /// @notice Getter for the current paused status.
     function paused() public view returns (bool) {
         return superchainConfig.paused();
+    }
+
+    /// @notice Returns the address allowed to update the deposit blacklist. This is the owner of
+    ///         the ProxyAdmin that administers this proxy.
+    function blacklistAdmin() public view returns (address) {
+        bytes32 adminSlot = Constants.PROXY_OWNER_ADDRESS;
+        address admin;
+        assembly {
+            admin := sload(adminSlot)
+        }
+
+        (bool success, bytes memory data) = admin.staticcall(abi.encodeWithSignature("owner()"));
+        if (!success || data.length < 32) return address(0);
+
+        return address(uint160(uint256(bytes32(data))));
+    }
+
+    /// @notice Adds or removes an address from the deposit blacklist.
+    /// @dev Only callable by the ProxyAdmin owner.
+    /// @param _account     The address to update.
+    /// @param _blacklisted Whether the address should be blacklisted.
+    function setBlacklisted(address _account, bool _blacklisted) external {
+        if (msg.sender != blacklistAdmin()) revert Unauthorized();
+        isBlacklisted[_account] = _blacklisted;
+        emit AddressBlacklisted(_account, _blacklisted);
     }
 
     /// @notice Getter for the proof maturity delay.
@@ -556,6 +593,15 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ISemver {
     )
         internal
     {
+        // Transform the from-address to its alias if the caller is a contract.
+        address from = msg.sender;
+        if (msg.sender != tx.origin) {
+            from = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
+        }
+
+        // Reject blacklisted addresses as either the L1 caller or the derived L2 sender.
+        if (isBlacklisted[msg.sender] || isBlacklisted[from]) revert OptimismPortal_Blacklisted();
+
         // Just to be safe, make sure that people specify address(0) as the target when doing
         // contract creations.
         if (_isCreation && _to != address(0)) revert BadTarget();
@@ -569,12 +615,6 @@ contract OptimismPortal2 is Initializable, ResourceMetering, ISemver {
         // that the transaction can fit into the p2p network policy of 128kb even though deposit
         // transactions are not gossipped over the p2p network.
         if (_data.length > 120_000) revert LargeCalldata();
-
-        // Transform the from-address to its alias if the caller is a contract.
-        address from = msg.sender;
-        if (msg.sender != tx.origin) {
-            from = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
-        }
 
         // Compute the opaque data that will be emitted as part of the TransactionDeposited event.
         // We use opaque data so that we can update the TransactionDeposited event in the future

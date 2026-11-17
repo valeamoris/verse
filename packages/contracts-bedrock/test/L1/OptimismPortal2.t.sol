@@ -17,6 +17,7 @@ import { Predeploys } from "src/libraries/Predeploys.sol";
 
 // Target contract dependencies
 import { Proxy } from "src/universal/Proxy.sol";
+import { ProxyAdmin } from "src/universal/ProxyAdmin.sol";
 import { IResourceMetering } from "src/L1/interfaces/IResourceMetering.sol";
 import { AddressAliasHelper } from "src/vendor/AddressAliasHelper.sol";
 import { L1Block } from "src/L2/L1Block.sol";
@@ -295,6 +296,126 @@ contract OptimismPortal2_Test is CommonTest {
             _data: _data
         });
         assertEq(address(optimismPortal2).balance, _mint);
+    }
+
+    /// @notice Tests that the blacklist admin is the owner of the ProxyAdmin.
+    function test_blacklistAdmin_succeeds() external view {
+        address proxyAdmin = EIP1967Helper.getAdmin(address(optimismPortal2));
+        assertEq(optimismPortal2.blacklistAdmin(), ProxyAdmin(payable(proxyAdmin)).owner());
+    }
+
+    /// @notice Tests that the admin can add and remove an address from the blacklist.
+    function test_setBlacklisted_succeeds() external {
+        address account = address(0xbeef);
+        address admin = optimismPortal2.blacklistAdmin();
+
+        vm.expectEmit(address(optimismPortal2));
+        emit AddressBlacklisted(account, true);
+        vm.prank(admin);
+        optimismPortal2.setBlacklisted(account, true);
+        assertTrue(optimismPortal2.isBlacklisted(account));
+
+        vm.expectEmit(address(optimismPortal2));
+        emit AddressBlacklisted(account, false);
+        vm.prank(admin);
+        optimismPortal2.setBlacklisted(account, false);
+        assertFalse(optimismPortal2.isBlacklisted(account));
+    }
+
+    /// @notice Tests that only the blacklist admin can update the blacklist.
+    function testFuzz_setBlacklisted_notProxyAdminOwner_reverts(address _caller) external {
+        vm.assume(_caller != optimismPortal2.blacklistAdmin());
+        vm.expectRevert(Unauthorized.selector);
+        vm.prank(_caller);
+        optimismPortal2.setBlacklisted(address(0xbeef), true);
+    }
+
+    /// @notice Tests that a blacklisted EOA cannot deposit.
+    function test_depositTransaction_blacklisted_reverts() external {
+        vm.prank(optimismPortal2.blacklistAdmin());
+        optimismPortal2.setBlacklisted(depositor, true);
+
+        vm.deal(depositor, 1 ether);
+        vm.expectRevert(IOptimismPortal2.OptimismPortal_Blacklisted.selector);
+        vm.prank(depositor, depositor);
+        optimismPortal2.depositTransaction{ value: 1 ether }({
+            _to: address(1),
+            _value: 0,
+            _gasLimit: 100_000,
+            _isCreation: false,
+            _data: hex""
+        });
+    }
+
+    /// @notice Tests that a blacklisted contract caller cannot deposit, even though its L2
+    ///         `from` address would be aliased.
+    function test_depositTransaction_blacklistedContract_reverts() external {
+        vm.prank(optimismPortal2.blacklistAdmin());
+        optimismPortal2.setBlacklisted(address(this), true);
+
+        vm.deal(address(this), 1 ether);
+        vm.expectRevert(IOptimismPortal2.OptimismPortal_Blacklisted.selector);
+        optimismPortal2.depositTransaction{ value: 1 ether }({
+            _to: address(1),
+            _value: 0,
+            _gasLimit: 100_000,
+            _isCreation: false,
+            _data: hex""
+        });
+    }
+
+    /// @notice Tests that a blacklisted aliased L2 sender cannot deposit.
+    function test_depositTransaction_blacklistedAlias_reverts() external {
+        address aliasAddress = AddressAliasHelper.applyL1ToL2Alias(address(this));
+        vm.prank(optimismPortal2.blacklistAdmin());
+        optimismPortal2.setBlacklisted(aliasAddress, true);
+
+        vm.expectRevert(IOptimismPortal2.OptimismPortal_Blacklisted.selector);
+        optimismPortal2.depositTransaction({
+            _to: address(1),
+            _value: 0,
+            _gasLimit: 100_000,
+            _isCreation: false,
+            _data: new bytes(0)
+        });
+    }
+
+    /// @notice Tests that a blacklisted address can deposit again after being removed.
+    function test_depositTransaction_removedFromBlacklist_succeeds() external {
+        vm.startPrank(optimismPortal2.blacklistAdmin());
+        optimismPortal2.setBlacklisted(depositor, true);
+        optimismPortal2.setBlacklisted(depositor, false);
+        vm.stopPrank();
+
+        vm.expectEmit(address(optimismPortal2));
+        emitTransactionDeposited({
+            _from: depositor,
+            _to: address(1),
+            _value: 0,
+            _mint: 0,
+            _gasLimit: 100_000,
+            _isCreation: false,
+            _data: hex""
+        });
+        vm.prank(depositor, depositor);
+        optimismPortal2.depositTransaction({
+            _to: address(1),
+            _value: 0,
+            _gasLimit: 100_000,
+            _isCreation: false,
+            _data: hex""
+        });
+    }
+
+    /// @notice Tests that `receive` also rejects blacklisted callers.
+    function test_receive_blacklisted_reverts() external {
+        vm.prank(optimismPortal2.blacklistAdmin());
+        optimismPortal2.setBlacklisted(depositor, true);
+
+        vm.deal(depositor, 1 ether);
+        vm.expectRevert(IOptimismPortal2.OptimismPortal_Blacklisted.selector);
+        vm.prank(depositor, depositor);
+        address(optimismPortal2).call{ value: 1 ether }("");
     }
 
     /// @dev Tests that the gas paying token can be set.

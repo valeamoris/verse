@@ -12,6 +12,7 @@ interface IOptimismPortal2 {
     error AlreadyFinalized();
     error BadTarget();
     error Blacklisted();
+    error OptimismPortal_Blacklisted();
     error CallPaused();
     error ContentLengthMismatch();
     error EmptyItem();
@@ -35,6 +36,7 @@ interface IOptimismPortal2 {
     error UnexpectedString();
     error Unproven();
 
+    event AddressBlacklisted(address indexed account, bool blacklisted);
     event DisputeGameBlacklisted(IDisputeGame indexed disputeGame);
     event Initialized(uint8 version);
     event RespectedGameTypeSet(GameType indexed newGameType, Timestamp indexed updatedAt);
@@ -46,6 +48,7 @@ interface IOptimismPortal2 {
     receive() external payable;
 
     function balance() external view returns (uint256);
+    function blacklistAdmin() external view returns (address);
     function blacklistDisputeGame(IDisputeGame _disputeGame) external;
     function checkWithdrawal(bytes32 _withdrawalHash, address _proofSubmitter) external view;
     function depositERC20Transaction(
@@ -85,6 +88,7 @@ interface IOptimismPortal2 {
         GameType _initialRespectedGameType
     )
         external;
+    function isBlacklisted(address) external view returns (bool);
     function l2Sender() external view returns (address);
     function minimumGasLimit(uint64 _byteCount) external pure returns (uint64);
     function numProofSubmitters(bytes32 _withdrawalHash) external view returns (uint256);
@@ -108,6 +112,7 @@ interface IOptimismPortal2 {
         returns (IDisputeGame disputeGameProxy, uint64 timestamp);
     function respectedGameType() external view returns (GameType);
     function respectedGameTypeUpdatedAt() external view returns (uint64);
+    function setBlacklisted(address _account, bool _blacklisted) external;
     function setGasPayingToken(address _token, uint8 _decimals, bytes32 _name, bytes32 _symbol) external;
     function setRespectedGameType(GameType _gameType) external;
     function superchainConfig() external view returns (ISuperchainConfig);

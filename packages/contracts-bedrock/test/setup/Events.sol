@@ -103,4 +103,6 @@ contract Events {
     event Paused(string identifier);
 
     event Unpaused();
+
+    event AddressBlacklisted(address indexed account, bool blacklisted);
 }
